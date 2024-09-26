@@ -8,7 +8,6 @@ namespace wifi_info_store {
 
 constexpr static const char TAG[] = "wifi_info_store";
 
-//nvs名字千万不要改，否则无法向前兼容
 constexpr static const char _name_wifi_info[] = "wifi_prov";
 
 static struct {
