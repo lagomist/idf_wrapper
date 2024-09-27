@@ -15,5 +15,11 @@ extern "C" void app_main()
 {
     NvsWrapper::init("nvs");
     WifiWrapper::netif_init();
-    WifiWrapper::softap::init(AP_SSID, AP_PAWD);
+    WifiWrapper::station::init();
+
+    vTaskDelay(pdMS_TO_TICKS(5000));
+    if (WifiWrapper::store::is_provisioned() == false) {
+        WifiWrapper::station::provision("ESP-SOFTAP", "3325035137");
+    }
+
 }

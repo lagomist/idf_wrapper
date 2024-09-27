@@ -34,13 +34,13 @@ std::string get_ip();
 
 void netif_init();
 
-namespace sta {
+namespace station {
 
 void connect(std::string_view ssid, std::string_view pswd);
 void connect();
 void disconnect();
 
-State provide(std::string_view ssid, std::string_view pswd, uint32_t timeout_ms = 10000);
+State provision(std::string_view ssid, std::string_view pswd, uint32_t timeout_ms = 10000);
 
 void set_connect_cb(Callback cb);
 void set_disconnect_cb(Callback cb);
@@ -67,7 +67,7 @@ void connect(std::string_view ssid, std::string_view pswd);
 void connect();
 void disconnect();
 
-State provide(std::string_view ssid, std::string_view pswd, uint32_t timeout_ms = 10000);
+State provision(std::string_view ssid, std::string_view pswd, uint32_t timeout_ms = 10000);
 
 void set_connect_cb(Callback cb);
 void set_disconnect_cb(Callback cb);
@@ -83,11 +83,10 @@ void deinit();
 namespace store {
 
 bool is_provisioned();
-std::string get_ssid();
-std::string get_pswd();
-int write(std::string_view ssid, std::string_view pswd);
-int read();
+std::string read_ssid();
+std::string read_pswd();
 void erase();
+int write(std::string_view ssid, std::string_view pswd);
 
 } /* namespace WifiWrapper::store */
 
