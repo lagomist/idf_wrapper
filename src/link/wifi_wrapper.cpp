@@ -1,9 +1,13 @@
 #include "wifi_wrapper.h"
+#include "nvs_wrapper.h"
+#include "wrapper_config.h"
+
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 #include "esp_mac.h"
 #include "esp_system.h"
 #include "esp_event.h"
 #include "dhcpserver/dhcpserver.h"
-
 #include <lwip/netdb.h>
 #include <lwip/dns.h>
 #include <esp_wifi.h>
@@ -13,9 +17,8 @@
 
 namespace WifiWrapper {
 
-#define DEFAULT_DNS             "8.8.8.8"
 
-static const char *TAG = "wifi_wrapper";
+constexpr static const char* TAG = "wifi_wrapper";
 
 static std::atomic<esp_netif_t*> _ap_netif = nullptr;
 static std::atomic<esp_netif_t*> _sta_netif = nullptr;
@@ -26,23 +29,74 @@ static std::atomic_bool	_auto_reconnect = false;
 static std::atomic<Mode> _wifi_mode = WIFI_MODE_NULL;
 static bool _enable_nat = false;
 
+namespace store {
+
+constexpr static const char* NVS_NAMESPACE_WIFI = "wifi_wrapper";
+
+static struct {
+	char ssid[32] = {};
+	char pswd[64] = {};
+} _provisioned;
+
+bool is_provisioned() {
+	return _provisioned.ssid[0];
+}
+
+std::string get_ssid() {
+	// 检查最后一字节是否有值, 如果有值则截断
+	return {_provisioned.ssid, _provisioned.ssid[sizeof(_provisioned.ssid) - 1] ? sizeof(_provisioned.ssid) : strlen(_provisioned.ssid)};
+}
+
+std::string get_pswd() {
+	// 检查最后一字节是否有值, 如果有值则截断
+	return {_provisioned.pswd, _provisioned.pswd[sizeof(_provisioned.pswd) - 1] ? sizeof(_provisioned.pswd) : strlen(_provisioned.pswd)};
+}
+
+int write(std::string_view ssid, std::string_view pswd) {
+	_provisioned = {};
+	memcpy(_provisioned.ssid, ssid.data(), std::min(sizeof(_provisioned.ssid), ssid.size()));
+	memcpy(_provisioned.pswd, pswd.data(), std::min(sizeof(_provisioned.pswd), pswd.size()));
+	int res = NvsWrapper::write(NVS_NAMESPACE_WIFI, _provisioned);
+    return res;
+}
+
+int read() {
+    int res;
+	_provisioned = {};
+	if (NvsWrapper::read(NVS_NAMESPACE_WIFI, _provisioned) < 0) {
+		ESP_LOGW(TAG, "store has not yet been provisioned");
+        res = -1;
+    } else {
+		ESP_LOGW(TAG, "load wifi info, ssid [%.32s] pswd [%.64s]", _provisioned.ssid, _provisioned.pswd);
+        res = 0;
+    }
+    return res;
+}
+
+void erase() {
+	_provisioned = {};
+	NvsWrapper::erase(NVS_NAMESPACE_WIFI);
+	ESP_LOGW(TAG, "store erased.");
+}
+
+} /* namespace store */
 
 static void wifi_sta_config(std::string_view ssid, std::string_view pswd) {
 	wifi_config_t wifi_cfg = {};
-    if (_wifi_mode != WIFI_MODE_STA || _wifi_mode != WIFI_MODE_APSTA) {
+    if (_wifi_mode != WIFI_MODE_STA && _wifi_mode != WIFI_MODE_APSTA) {
         ESP_LOGE(TAG, "mode config error!");
         return;
     }
     wifi_cfg.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
     memcpy(wifi_cfg.sta.ssid, ssid.data(), std::min(sizeof(wifi_cfg.sta.ssid), ssid.size()));
     memcpy(wifi_cfg.sta.password, pswd.data(), std::min(sizeof(wifi_cfg.sta.password), pswd.size()));
-    ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_cfg));
+    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_cfg));
 	ESP_LOGI(TAG, "sta ssid,%.*s, password,%.*s", ssid.size(), ssid.data(), pswd.size(), pswd.data());
 }
 
 static void wifi_ap_config(std::string_view ssid, std::string_view pswd) {
 	wifi_config_t wifi_cfg = {};
-    if (_wifi_mode != WIFI_MODE_AP || _wifi_mode != WIFI_MODE_APSTA) {
+    if (_wifi_mode != WIFI_MODE_AP && _wifi_mode != WIFI_MODE_APSTA) {
         ESP_LOGE(TAG, "mode config error!");
         return;
     }
@@ -51,13 +105,13 @@ static void wifi_ap_config(std::string_view ssid, std::string_view pswd) {
     wifi_cfg.ap.authmode = WIFI_AUTH_WPA_WPA2_PSK;
     wifi_cfg.ap.ssid_hidden = false;
     wifi_cfg.ap.beacon_interval = 100;
-    wifi_cfg.ap.ssid_len = ssid.lenght();
+    wifi_cfg.ap.ssid_len = ssid.length();
     memcpy(wifi_cfg.ap.ssid, ssid.data(), std::min(sizeof(wifi_cfg.ap.ssid), ssid.size()));
     memcpy(wifi_cfg.ap.password, pswd.data(), std::min(sizeof(wifi_cfg.ap.password), pswd.size()));
     if (pswd.size() == 0) {
         wifi_cfg.ap.authmode = WIFI_AUTH_OPEN;
     }
-    ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_AP, &wifi_cfg));
+    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_cfg));
     ESP_LOGI(TAG, "ap ssid,%.*s, password,%.*s", ssid.size(), ssid.data(), pswd.size(), pswd.data());
 
 }
@@ -71,12 +125,12 @@ static void event_handler(void* arg, esp_event_base_t event_base,
         ESP_LOGI(TAG, "softap start");
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_AP_STACONNECTED) {
         wifi_event_ap_staconnected_t* event = (wifi_event_ap_staconnected_t*) event_data;
-        ESP_LOGI(TAG, "station "MACSTR" join, AID=%d",
+        ESP_LOGI(TAG, "station " MACSTR " join, AID=%d",
                  MAC2STR(event->mac), event->aid);
 
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_AP_STADISCONNECTED) {
         wifi_event_ap_stadisconnected_t* event = (wifi_event_ap_stadisconnected_t*) event_data;
-        ESP_LOGI(TAG, "station "MACSTR" leave, AID=%d",
+        ESP_LOGI(TAG, "station " MACSTR " leave, AID=%d",
                  MAC2STR(event->mac), event->aid);
     }
 
@@ -129,7 +183,8 @@ static void wifi_deinit(esp_netif_t* netif) {
 
 std::string get_ip() {
 	esp_netif_ip_info_t ip_info{};
-    std::string ip_str[16] = {};
+    std::string ip_str = {};
+    ip_str.resize(16);
     switch (_wifi_mode) {
     case WIFI_MODE_AP:
         esp_netif_get_ip_info(_ap_netif, &ip_info);
@@ -181,30 +236,33 @@ void connect(std::string_view ssid, std::string_view pswd) {
 }
 
 void connect() {
-    if (wifi_info_store::is_provisioned())
-        connect(wifi_info_store::get_ssid(), wifi_info_store::get_pswd());
+    if (WifiWrapper::store::is_provisioned())
+        connect(WifiWrapper::store::get_ssid(), WifiWrapper::store::get_pswd());
 }
 
-State provide(std::string_view ssid, std::string_view pswd, uint32_t timeout_ms) {
+State provision(std::string_view ssid, std::string_view pswd, uint32_t timeout_ms) {
 	connect(ssid, pswd);
-	utility::retry([]() {
-		return state() != State::OK ? -1 : 0;
-	}, 10, timeout_ms / 10);
+    for(int i = 0; i < 10; i++) {
+		int ret = state() != State::OK ? -1 : 0;
+		if(ret >= 0)
+			break;
+        vTaskDelay(pdMS_TO_TICKS(timeout_ms / 10));
+	}
 	switch (state()) {
     // 在超时时间内连上, 就写入nvs
     case State::OK:
-        wifi_info_store::nvs_write(ssid, pswd, bssid);
+        WifiWrapper::store::write(ssid, pswd);
         break;
     // 否则回滚到之前的配置
     default:
         // 之前有配过网就沿用, 否则不再重试连接
-        if (wifi_info_store::is_provisioned())
-            wifi_set_config(wifi_info_store::get_ssid(), wifi_info_store::get_pswd(), wifi_info_store::get_bssid());
+        if (WifiWrapper::store::is_provisioned())
+            wifi_sta_config(WifiWrapper::store::get_ssid(), WifiWrapper::store::get_pswd());
         else
             disconnect();
         break;
 	}
-	ESP_LOGW(TAG, "prov res %s", state_str(state()));
+	ESP_LOGW(TAG, "prov %s", state_str(state()));
 	return state();
 }
 
@@ -222,8 +280,8 @@ void init() {
 	ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     _wifi_mode = WIFI_MODE_STA;
     esp_wifi_start();
-    if (wifi_info_store::is_provisioned()) {
-        connect(wifi_info_store::get_ssid(), wifi_info_store::get_pswd());
+    if (WifiWrapper::store::is_provisioned()) {
+        connect(WifiWrapper::store::get_ssid(), WifiWrapper::store::get_pswd());
     }
     ESP_LOGI(TAG, "sta init finished.");
 }
@@ -237,7 +295,7 @@ void deinit() {
 } /* namespace WifiWrapper::sta */
 
 
-namespace ap {
+namespace softap {
 
 void init(std::string_view ssid, std::string_view pswd) {
 	if (_sta_netif || _ap_netif)
@@ -252,7 +310,7 @@ void init(std::string_view ssid, std::string_view pswd) {
     _wifi_mode = WIFI_MODE_AP;
     wifi_ap_config(ssid, pswd);
     esp_wifi_start();
-    ESP_LOGI(TAG, "ap init finished.");
+    ESP_LOGI(TAG, "softap init finished.");
 }
 
 void deinit() {
@@ -261,7 +319,7 @@ void deinit() {
     _wifi_mode = WIFI_MODE_NULL;
 }
 
-} /* namespace WifiWrapper::ap */
+} /* namespace WifiWrapper::softap */
 
 
 namespace apsta {
@@ -280,8 +338,8 @@ void init(std::string_view ssid, std::string_view pswd) {
     _wifi_mode = WIFI_MODE_APSTA;
     wifi_ap_config(ssid, pswd);
     esp_wifi_start();
-    if (wifi_info_store::is_provisioned()) {
-        connect(wifi_info_store::get_ssid(), wifi_info_store::get_pswd());
+    if (WifiWrapper::store::is_provisioned()) {
+        connect(WifiWrapper::store::get_ssid(), WifiWrapper::store::get_pswd());
     }
 #if IP_NAPT
     if (enable_nat) {
@@ -292,7 +350,7 @@ void init(std::string_view ssid, std::string_view pswd) {
 
         // Set custom dns server address for dhcp server
         esp_netif_dns_info_t dnsserver;
-        dnsserver.ip.u_addr.ip4.addr = esp_ip4addr_aton(DEFAULT_DNS);
+        dnsserver.ip.u_addr.ip4.addr = esp_ip4addr_aton(WIFI_WRAPPER_CONFIG_DNS);
         dnsserver.ip.type = ESP_IPADDR_TYPE_V4;
         esp_netif_set_dns_info(ap_netif, ESP_NETIF_DNS_MAIN, &dnsserver);
 

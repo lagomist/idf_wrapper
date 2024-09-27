@@ -1,0 +1,7 @@
+.vscode
+build
+test/.vscode
+test/build
+test/sdkconfig
+test/sdkconfig.old
+test/dependencies.lock

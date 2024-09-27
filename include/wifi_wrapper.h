@@ -30,7 +30,7 @@ constexpr const char* state_str(State state) {
 
 State state();
 
-uint32_t get_ip();
+std::string get_ip();
 
 void netif_init();
 
@@ -53,7 +53,7 @@ void deinit();
 
 }
 
-namespace ap {
+namespace softap {
 
 void init(std::string_view ssid, std::string_view pswd);
 void deinit();
@@ -79,5 +79,17 @@ void init(std::string_view ssid, std::string_view pswd);
 void deinit();
 
 } /* namespace WifiWrapper::apsta */
+
+namespace store {
+
+bool is_provisioned();
+std::string get_ssid();
+std::string get_pswd();
+int write(std::string_view ssid, std::string_view pswd);
+int read();
+void erase();
+
+} /* namespace WifiWrapper::store */
+
 
 } /* namespace WifiWrapper */
