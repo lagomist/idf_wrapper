@@ -145,7 +145,7 @@ static uint8_t  primary_char_ccc[2] = {0x00,0x00};
 
 
 
-///Full HRS Database Description - Used to add attributes into the database
+// Full HRS Database Description - Used to add attributes into the database
 static const esp_gatts_attr_db_t gatt_db[HRS_IDX_NB] =
 {
     // Service Declaration

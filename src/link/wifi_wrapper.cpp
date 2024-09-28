@@ -128,12 +128,14 @@ static void event_handler(void* arg, esp_event_base_t event_base,
     if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
         /* wifi disconnected event */
         auto data = (wifi_event_sta_disconnected_t*)event_data;
-        ESP_LOGE(TAG, "disconnected reason:%d,rssi:%d", data->reason, data->rssi);
-        _state = State::NO_AP_FOUND;
-        _disconnect_cb.load()();
+        if (_state == State::OK) {
+            ESP_LOGE(TAG, "disconnected reason:%d,rssi:%d", data->reason, data->rssi);
+            _disconnect_cb.load()();
+        }
         if (_auto_reconnect) {
             esp_wifi_connect();
         }
+        _state = State::NO_AP_FOUND;
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_STOP) {
         /* wifi stop event */
         ESP_LOGD(TAG, "wifi stoped.");

@@ -28,11 +28,11 @@ constexpr const char* state_str(State state) {
 	}
 }
 
+void netif_init();
 State state();
-
+Mode get_mode();
 std::string get_ip();
 
-void netif_init();
 
 namespace station {
 
@@ -51,14 +51,14 @@ int get_rssi();
 void init();
 void deinit();
 
-}
+} /* namespace WifiWrapper::station */
 
 namespace softap {
 
 void init(std::string_view ssid, std::string_view pswd);
 void deinit();
 
-}
+} /* namespace WifiWrapper::softap */
 
 
 namespace apsta {

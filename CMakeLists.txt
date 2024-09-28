@@ -1,9 +1,6 @@
-set(inc_list
-    ${COMPONENT_DIR}/include
-    ${COMPONENT_DIR}/misc
-)
-
 set(src_list)
+set(inc_list)
+set(dependencies)
 
 include(${COMPONENT_DIR}/wrapper_driver.cmake)
 
