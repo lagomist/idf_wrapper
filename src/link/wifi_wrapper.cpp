@@ -37,7 +37,7 @@ constexpr static const char* NVS_KEY_WIFI_SSID = "wifi_ssid";
 constexpr static const char* NVS_KEY_WIFI_PSWD = "wifi_pswd";
 
 bool is_provisioned() {
-    int len = NvsWrapper::get_size(NVS_KEY_WIFI_SSID);
+    int len = NvsWrapper::getSize(NVS_KEY_WIFI_SSID);
 	return len > 0 ? true : false;
 }
 
@@ -111,7 +111,7 @@ static void event_handler(void* arg, esp_event_base_t event_base,
                                 int32_t event_id, void* event_data) {
     /* ---------------WiFi AP event----------------*/
     if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_AP_START) {
-        ESP_LOGI(TAG, "softap start");
+        ESP_LOGI(TAG, "Softap start");
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_AP_STACONNECTED) {
         wifi_event_ap_staconnected_t* event = (wifi_event_ap_staconnected_t*) event_data;
         ESP_LOGI(TAG, "station " MACSTR " join, AID=%d",
@@ -199,7 +199,7 @@ State state() {
 	return _state;
 }
 
-namespace station {
+namespace Station {
 
 int get_rssi() {
 	wifi_ap_record_t ap_info;
@@ -278,7 +278,7 @@ void init() {
     if (WifiWrapper::store::is_provisioned()) {
         connect(WifiWrapper::store::read_ssid(), WifiWrapper::store::read_pswd());
     }
-    ESP_LOGI(TAG, "station init finished.");
+    ESP_LOGI(TAG, "Station init finished.");
 }
 
 void deinit() {
@@ -287,10 +287,10 @@ void deinit() {
     _wifi_mode = WIFI_MODE_NULL;
 }
 
-} /* namespace WifiWrapper::station */
+} /* namespace WifiWrapper::Station */
 
 
-namespace softap {
+namespace Softap {
 
 void init(std::string_view ssid, std::string_view pswd) {
 	if (_sta_netif || _ap_netif)
@@ -305,7 +305,7 @@ void init(std::string_view ssid, std::string_view pswd) {
     _wifi_mode = WIFI_MODE_AP;
     wifi_ap_config(ssid, pswd);
     esp_wifi_start();
-    ESP_LOGI(TAG, "softap init finished.");
+    ESP_LOGI(TAG, "Softap init finished.");
 }
 
 void deinit() {
@@ -314,10 +314,10 @@ void deinit() {
     _wifi_mode = WIFI_MODE_NULL;
 }
 
-} /* namespace WifiWrapper::softap */
+} /* namespace WifiWrapper::Softap */
 
 
-namespace apsta {
+namespace Apsta {
 
 int get_rssi() {
 	wifi_ap_record_t ap_info;
@@ -416,7 +416,7 @@ void init(std::string_view ssid, std::string_view pswd) {
         ESP_LOGI(TAG, "NAPT is enabled.");
     }
 #endif
-    ESP_LOGI(TAG, "apsta init finished.");
+    ESP_LOGI(TAG, "Apsta init finished.");
 }
 
 void deinit() {
@@ -427,7 +427,7 @@ void deinit() {
     _wifi_mode = WIFI_MODE_NULL;
 }
 
-} /* namespace WifiWrapper::apsta */
+} /* namespace WifiWrapper::Apsta */
 
 void netif_init() {
     ESP_ERROR_CHECK(esp_netif_init());

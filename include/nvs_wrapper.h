@@ -54,7 +54,7 @@ int read(const char name[], void* buf, uint32_t len);
 
 int erase(const char name[]);
 //size in bytes
-int get_size(const char name[]);
+int getSize(const char name[]);
 
 void traversal(std::string_view part_name, std::function<void(std::string_view)> pred);
 
@@ -70,7 +70,7 @@ int write(const char name[], const T& value) {
 //return -1 or actual number of items
 template <typename T>
 int read(const char name[], T& value) {
-	int size = get_size(name);
+	int size = getSize(name);
 	if(size <= 0)
 		return -1;
 	return nvs_pred::read(read, name, value, size);

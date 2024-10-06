@@ -1,23 +1,21 @@
 #include "ble_wrapper.h"
 #include "wrapper_config.h"
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/queue.h"
 #include "esp_gap_ble_api.h"
 #include "esp_bt_main.h"
 #include "esp_bt.h"
 #include "esp_gatt_common_api.h"
+#include "esp_gatts_api.h"
 #include "esp_log.h"
 #include <string>
 #include <atomic>
 #include <memory.h>
 
-#define MANUFACTURER_DATA_LEN_MAX   30
+
 
 namespace BleWrapper {
 
-namespace server {
+namespace Server {
 
 /**
  * @brief gatt characteristic instance
@@ -45,12 +43,6 @@ struct gatts_profile_inst {
     struct gatts_profile_inst *next;
 };
 
-/* 服务事件处理队列结构体 */
-struct evt_queue_handle {
-    gatts_profile_inst *profile;
-    int event;
-};
-
 
 constexpr static const char *TAG = "gatts_wrapper";
 
@@ -61,12 +53,22 @@ static std::atomic_uint16_t _mtu_size = 27;
 static uint8_t              _default_char_value[1] = {0x00};
 static uint8_t              _default_char_ccc[2] = {0x00,0x00};
 
-static QueueHandle_t        _evt_queue = nullptr;
-
 static ConnCallback         _connect_cb = nullptr;
 static ConnCallback         _disconnect_cb = nullptr;
-static std::string          _gap_dev_name;
 static std::atomic_bool		_is_connected = false;
+
+static esp_attr_value_t _default_attr_value = {
+    .attr_max_len = DEFAULT_GATTS_CHAR_VAL_LEN_MAX,
+    .attr_len     = sizeof(_default_char_value),
+    .attr_value   = _default_char_value,
+};
+/* 客户端配置描述符值定义 */
+static esp_attr_value_t _descr_value = {
+    .attr_max_len = sizeof (uint16_t),
+    .attr_len = sizeof(_default_char_ccc),
+    .attr_value = _default_char_ccc,
+};
+
 static uint8_t              _adv_service_uuid128[16] = {
     /* LSB <--------------------------------------------------------------------------------> MSB */
     // first uuid, 16bit, [12],[13] is the value
@@ -239,6 +241,54 @@ static void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param
     }
 }
 
+/**
+ * @brief 服务配置事件处理
+ * 
+ * @param event 事件
+ * @param profile 服务配置指针
+ */
+static void profile_event_handle(int event, gatts_profile_inst *profile) {
+    switch (event) {
+    case ESP_GATTS_CREATE_EVT:
+        /* 遍历特征列表 添加特征 */
+        for (gatts_char_inst *char_inst = profile->characteristic; char_inst; char_inst = char_inst->next) {
+            if (char_inst->handle == 0) {
+                esp_ble_gatts_add_char(profile->service_handle, &char_inst->uuid,
+                                        char_inst->perm, char_inst->property, &_default_attr_value, nullptr);
+                break;
+            }
+        }
+        break;
+    case ESP_GATTS_ADD_CHAR_EVT:
+        /* 遍历特征列表 添加特征或描述符 */
+        for (gatts_char_inst *char_inst = profile->characteristic; char_inst; char_inst = char_inst->next) {
+            if (char_inst->handle == 0) {
+                esp_ble_gatts_add_char(profile->service_handle, &char_inst->uuid,
+                                        char_inst->perm, char_inst->property, &_default_attr_value, nullptr);
+                break;
+            }
+            if (char_inst->descr_handle == 0 && char_inst->descr_uuid.len != 0) {
+                esp_ble_gatts_add_char_descr(profile->service_handle, &char_inst->descr_uuid,
+                                        ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE, &_descr_value, nullptr);
+                break;
+            }
+        }
+        break;
+    case ESP_GATTS_ADD_CHAR_DESCR_EVT:
+        /* 遍历特征列表 添加下一个特征 */
+        for (gatts_char_inst *char_inst = profile->characteristic; char_inst; char_inst = char_inst->next) {
+            if (char_inst->handle == 0) {
+                esp_ble_gatts_add_char(profile->service_handle, &char_inst->uuid,
+                                        char_inst->perm, char_inst->property, &_default_attr_value, nullptr);
+                break;
+            }
+        }
+        break;
+    default:
+        break;
+    }
+}
+
 
 /**
  * @brief GATT service profile 处理
@@ -354,12 +404,7 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
         profile_inst->service_handle = param->create.service_handle;
 
         esp_ble_gatts_start_service(profile_inst->service_handle);
-
-        struct evt_queue_handle handle;
-        handle.event = ESP_GATTS_CREATE_EVT;
-        handle.profile = profile_inst;
-        xQueueSend(_evt_queue, &handle, 10 / portTICK_PERIOD_MS);
-        
+        profile_event_handle(ESP_GATTS_CREATE_EVT, profile_inst);
         break;
     }
     case ESP_GATTS_ADD_INCL_SRVC_EVT:
@@ -373,11 +418,7 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
                 break;
             }
         }
-        struct evt_queue_handle handle;
-        handle.event = ESP_GATTS_ADD_CHAR_EVT;
-        handle.profile = profile_inst;
-        xQueueSend(_evt_queue, &handle, 10 / portTICK_PERIOD_MS);
-      
+        profile_event_handle(ESP_GATTS_ADD_CHAR_EVT, profile_inst);
         break;
     }
     case ESP_GATTS_ADD_CHAR_DESCR_EVT: {
@@ -387,10 +428,7 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
                 break;
             }
         }
-        struct evt_queue_handle handle;
-        handle.event = ESP_GATTS_ADD_CHAR_DESCR_EVT;
-        handle.profile = profile_inst;
-        xQueueSend(_evt_queue, &handle, 10 / portTICK_PERIOD_MS);
+        profile_event_handle(ESP_GATTS_ADD_CHAR_DESCR_EVT, profile_inst);
         break;
     }
     case ESP_GATTS_DELETE_EVT:
@@ -435,68 +473,6 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
     case ESP_GATTS_CONGEST_EVT:
     default:
         break;
-    }
-}
-
-
-
-static void gatts_evt_handle_task(void *pvParameters)
-{
-    struct evt_queue_handle handle;
-
-    esp_attr_value_t default_attr_value = {
-        .attr_max_len = GATTS_WRAPPER_VAL_LEN_MAX,
-        .attr_len     = sizeof(_default_char_value),
-        .attr_value   = _default_char_value,
-    };
-    /* 客户端配置描述符值定义 */
-    esp_attr_value_t descr_value = {
-        .attr_max_len = sizeof (uint16_t),
-        .attr_len = sizeof(_default_char_ccc),
-        .attr_value = _default_char_ccc,
-    };
-
-    while (1) {
-        xQueueReceive(_evt_queue, &handle, portMAX_DELAY);
-        switch (handle.event) {
-        case ESP_GATTS_CREATE_EVT:
-            /* 遍历特征列表 添加特征 */
-            for (gatts_char_inst *char_inst = handle.profile->characteristic; char_inst; char_inst = char_inst->next) {
-                if (char_inst->handle == 0) {
-                    esp_ble_gatts_add_char(handle.profile->service_handle, &char_inst->uuid,
-                                            char_inst->perm, char_inst->property, &default_attr_value, nullptr);
-                    break;
-                }
-            }
-            break;
-        case ESP_GATTS_ADD_CHAR_EVT:
-            /* 遍历特征列表 添加特征或描述符 */
-            for (gatts_char_inst *char_inst = handle.profile->characteristic; char_inst; char_inst = char_inst->next) {
-                if (char_inst->handle == 0) {
-                    esp_ble_gatts_add_char(handle.profile->service_handle, &char_inst->uuid,
-                                            char_inst->perm, char_inst->property, &default_attr_value, nullptr);
-                    break;
-                }
-                if (char_inst->descr_handle == 0 && char_inst->descr_uuid.len != 0) {
-                    esp_ble_gatts_add_char_descr(handle.profile->service_handle, &char_inst->descr_uuid,
-                                            ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE, &descr_value, nullptr);
-                    break;
-                }
-            }
-            break;
-        case ESP_GATTS_ADD_CHAR_DESCR_EVT:
-            /* 遍历特征列表 添加下一个特征 */
-            for (gatts_char_inst *char_inst = handle.profile->characteristic; char_inst; char_inst = char_inst->next) {
-                if (char_inst->handle == 0) {
-                    esp_ble_gatts_add_char(handle.profile->service_handle, &char_inst->uuid,
-                                            char_inst->perm, char_inst->property, &default_attr_value, nullptr);
-                    break;
-                }
-            }
-            break;
-        default:
-            break;
-        }
     }
 }
 
@@ -587,8 +563,8 @@ void start_service(uint16_t app_id) {
 }
 
 void start_default_service(uint16_t app_id) {
-    add_service(app_id, GATTS_WRAPPER_DEFAULT_SVC_UUID);
-    add_char(app_id, GATTS_WRAPPER_DEFAULT_CHAR_UUID, CharProperty::READ_WRITE_NOTIFY);
+    add_service(app_id, BLE_WRAPPER_DEFAULT_SVC_UUID);
+    add_char(app_id, BLE_WRAPPER_DEFAULT_CHAR_UUID, CharProperty::READ_WRITE_NOTIFY);
     start_service(app_id);
 }
 
@@ -674,22 +650,15 @@ void init(std::string_view host_name) {
         return;
     }
 
-    ret = esp_ble_gatt_set_local_mtu(GATTS_WRAPPER_DEFAULT_MTU_SIZE);
+    ret = esp_ble_gatt_set_local_mtu(BLE_WRAPPER_DEFAULT_MTU_SIZE);
     if (ret){
         ESP_LOGE(TAG, "set local  MTU failed, error code = %x", ret);
     }
 
-    _gap_dev_name = host_name;
     ret = esp_ble_gap_set_device_name(host_name.data());
     if (ret){
         ESP_LOGE(TAG, "set device name failed, error code = %x", ret);
     }
-    
-    _evt_queue = xQueueCreate(1, sizeof(struct evt_queue_handle));
-    if (_evt_queue == nullptr) {
-        ESP_LOGE(TAG, "_evt_queue create failed!");
-    }
-    xTaskCreate(gatts_evt_handle_task, "gatts_handle_task", 3 * 1024, nullptr, 5, nullptr);
 }
 
 

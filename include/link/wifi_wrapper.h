@@ -34,7 +34,7 @@ Mode get_mode();
 std::string get_ip();
 
 
-namespace station {
+namespace Station {
 
 void connect(std::string_view ssid, std::string_view pswd);
 void connect();
@@ -51,17 +51,17 @@ int get_rssi();
 void init();
 void deinit();
 
-} /* namespace WifiWrapper::station */
+} /* namespace WifiWrapper::Station */
 
-namespace softap {
+namespace Softap {
 
 void init(std::string_view ssid, std::string_view pswd);
 void deinit();
 
-} /* namespace WifiWrapper::softap */
+} /* namespace WifiWrapper::Softap */
 
 
-namespace apsta {
+namespace Apsta {
 
 void connect(std::string_view ssid, std::string_view pswd);
 void connect();
@@ -78,7 +78,7 @@ int get_rssi();
 void init(std::string_view ssid, std::string_view pswd);
 void deinit();
 
-} /* namespace WifiWrapper::apsta */
+} /* namespace WifiWrapper::Apsta */
 
 namespace store {
 

@@ -24,7 +24,7 @@ static int open(std::string_view part_name) {
 }
 
 int erase(const char name[]) {
-	if (get_size(name) < 0)
+	if (getSize(name) < 0)
 		return 0;
 	int err = _handle->erase_item(name);
 	if (err != ESP_OK) {
@@ -57,7 +57,7 @@ int read(const char name[], void* buf, uint32_t size) {
 	return size;
 }
 
-int get_size(const char name[]) {
+int getSize(const char name[]) {
 	size_t size = 0;
 	int err = _handle->get_item_size(nvs::ItemType::BLOB, name, size);
 	if (err == ESP_ERR_NVS_NOT_FOUND) {

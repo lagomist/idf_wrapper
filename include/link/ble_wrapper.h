@@ -1,23 +1,23 @@
 #pragma once
 
-#include "esp_gatts_api.h"
+#include "bufdef.h"
 #include <string_view>
 
 namespace BleWrapper {
 
-namespace server {
+namespace Server {
 
 enum CharProperty : uint8_t {
-	READ = ESP_GATT_CHAR_PROP_BIT_READ,
-	WRITE = ESP_GATT_CHAR_PROP_BIT_WRITE,
-	NOTIFY = ESP_GATT_CHAR_PROP_BIT_NOTIFY,
-	READ_WRITE = ESP_GATT_CHAR_PROP_BIT_READ | ESP_GATT_CHAR_PROP_BIT_WRITE,
-	WRITE_NOTIFY = ESP_GATT_CHAR_PROP_BIT_WRITE | ESP_GATT_CHAR_PROP_BIT_NOTIFY,
-	READ_WRITE_NOTIFY = ESP_GATT_CHAR_PROP_BIT_READ | ESP_GATT_CHAR_PROP_BIT_WRITE | ESP_GATT_CHAR_PROP_BIT_NOTIFY,
+	READ = (1 << 1),
+	WRITE = (1 << 3),
+	NOTIFY = (1 << 4),
+	READ_WRITE = (1 << 1) | (1 << 3),
+	WRITE_NOTIFY = (1 << 3) | (1 << 4),
+	READ_WRITE_NOTIFY = (1 << 1) | (1 << 3) | (1 << 4),
 };
 
 struct RecvEvtParam {
-	esp_gatt_if_t gatts_if;		// 服务接口
+	uint8_t gatts_if;			// 服务接口
 	uint16_t conn_id;			// 连接ID
 	uint16_t handle;			// 属性句柄
 	uint8_t *data;				// 接收数据
@@ -120,4 +120,64 @@ void register_disconnect_cb(ConnCallback cb);
 
 }
 
+namespace DefaultServer {
+
+/* Attributes State Machine */
+enum Attr: uint8_t {
+    IDX_SVC,
+	IDX_PRIMARY_CHAR,
+	IDX_PRIMARY_CHAR_VAL,
+	IDX_PRIMARY_CHAR_CFG,
+    HRS_IDX_NB,
+};
+
+
+uint16_t mtuSize();
+
+int send(uint8_t* data, int len);
+int send(IBuf data);
+
+bool isConnected();
+
+using RecvCallback = void (*)(IBuf);
+using ConnCallback = void (*)();
+
+void registerRecvCallback(RecvCallback cb);
+void registerConnectCallback(ConnCallback cb);
+void registerDisconnectCallback(ConnCallback cb);
+
+void deauth();
+
+void init(std::string_view host_name);
+void deinit();
+
+void advUpdeta(uint8_t* data, int len);
+
+
+} /* namespace BleWrapper::DefaultServer */
+
+
+namespace Client {
+
+using RecvCallback = void (*)(IBuf);
+using ConnCallback = void (*)();
+
+void init();
+void deinit();
+void deauth();
+void config(std::string_view server_name, uint16_t service_uuid);
+void addInterestedChar(uint16_t char_uuid);
+void createDefaultService(std::string_view server_name);
+
+uint16_t mtuSize();
+int write(uint16_t uuid, uint8_t *data, int data_len);
+int write(IBuf data);
+
+void registerRecvCallback(RecvCallback cb);
+void registerConnectCallback(ConnCallback cb);
+void registerDisconnectCallback(ConnCallback cb);
+
 }
+
+
+} /* namespace BleWrapper */
