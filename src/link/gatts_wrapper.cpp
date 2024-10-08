@@ -69,7 +69,7 @@ static esp_attr_value_t _descr_value = {
     .attr_value = _default_char_ccc,
 };
 
-static uint8_t              _adv_service_uuid128[16] = {
+static uint8_t _adv_service_uuid128[16] = {
     /* LSB <--------------------------------------------------------------------------------> MSB */
     // first uuid, 16bit, [12],[13] is the value
     0xfb, 0x34, 0x9b, 0x5f, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00, 0xFF, 0x00, 0x00, 0x00,

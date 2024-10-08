@@ -1,17 +1,17 @@
-#include "pwm.h"
+#include "pwm_wrapper.h"
 #include <driver/ledc.h>
 #include <algorithm>
 #include <array>
 
-static const char TAG[] = "pwm";
-//10bit resolution, can be 10~13
+static const char TAG[] = "pwm_wrapper";
+// 10bit resolution, can be 10~13
 static constexpr uint8_t PWM_RESOLUTION = 10;
 
 static std::array<uint32_t, LEDC_TIMER_MAX> _tim_freq = {0};
 
 void PWM::init(uint8_t channel, int pin, uint32_t freq_hz, float dc) {
 	_channel = channel;
-	 _duty_cycle = dc;
+	_duty_cycle = dc;
 	// 查找可用定时器。频率相等或等于0（未使用），说明timer可用，退出查找
 	auto pfreq = std::find_if(_tim_freq.begin(), _tim_freq.end(), [freq_hz](auto value) {
 		return value == freq_hz || value == 0;

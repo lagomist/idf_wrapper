@@ -1,4 +1,5 @@
-#include "tcp_socket.h"
+#include "socket_wrapper.h"
+#include "esp_log.h"
 #include <lwip/sockets.h>
 #include <stdio.h>        // for perror
 #include <arpa/inet.h>    // for inet_addr
@@ -6,7 +7,9 @@
 
 #define MAX_CONNECT_NUM 10
 
-int TCPSocket::server(const char* ip, uint16_t port) {
+constexpr static const char* TAG = "socket_wrapper" ;
+
+int TCPSocket::server(uint16_t port) {
 	int fd = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
 	if (fd < 0) {
 		perror("socket");
@@ -24,7 +27,7 @@ int TCPSocket::server(const char* ip, uint16_t port) {
 		.sin_family = AF_INET,
 		.sin_port = htons(port),
 		.sin_addr = {
-		.s_addr = ip == NULL ? htonl(INADDR_ANY) : inet_addr(ip),
+		.s_addr = htonl(INADDR_ANY),
 		},
 	};
 
@@ -92,7 +95,7 @@ int TCPSocket::accept(int server_fd) {
 	char addr[32];
 	if (client_addr.sin_family == PF_INET) {
 		inet_ntoa_r(client_addr.sin_addr, addr, sizeof(addr) - 1);
-		printf("socket accepted ip address: %s\n", addr);
+		ESP_LOGI(TAG, "socket accepted ip address: %s\n", addr);
 	}
 
 	_sockfd = fd;

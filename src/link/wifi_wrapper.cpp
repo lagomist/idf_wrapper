@@ -2,8 +2,6 @@
 #include "nvs_wrapper.h"
 #include "wrapper_config.h"
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
 #include "esp_mac.h"
 #include "esp_system.h"
 #include "esp_event.h"
@@ -31,7 +29,7 @@ static std::atomic<Mode> _wifi_mode = WIFI_MODE_NULL;
 static bool _enable_nat = false;
 #endif
 
-namespace store {
+namespace Store {
 
 constexpr static const char* NVS_KEY_WIFI_SSID = "wifi_ssid";
 constexpr static const char* NVS_KEY_WIFI_PSWD = "wifi_pswd";
@@ -65,10 +63,10 @@ int write(std::string_view ssid, std::string_view pswd) {
 void erase() {
 	NvsWrapper::erase(NVS_KEY_WIFI_SSID);
     NvsWrapper::erase(NVS_KEY_WIFI_PSWD);
-	ESP_LOGW(TAG, "store erased.");
+	ESP_LOGW(TAG, "Store erased.");
 }
 
-} /* namespace store */
+} /* namespace Store */
 
 static void wifi_sta_config(std::string_view ssid, std::string_view pswd) {
 	wifi_config_t wifi_cfg = {};
@@ -233,8 +231,8 @@ void connect(std::string_view ssid, std::string_view pswd) {
 }
 
 void connect() {
-    if (WifiWrapper::store::is_provisioned())
-        connect(WifiWrapper::store::read_ssid(), WifiWrapper::store::read_pswd());
+    if (WifiWrapper::Store::is_provisioned())
+        connect(WifiWrapper::Store::read_ssid(), WifiWrapper::Store::read_pswd());
 }
 
 State provision(std::string_view ssid, std::string_view pswd, uint32_t timeout_ms) {
@@ -248,13 +246,13 @@ State provision(std::string_view ssid, std::string_view pswd, uint32_t timeout_m
 	switch (state()) {
     // 在超时时间内连上, 就写入nvs
     case State::OK:
-        WifiWrapper::store::write(ssid, pswd);
+        WifiWrapper::Store::write(ssid, pswd);
         break;
     // 否则回滚到之前的配置
     default:
         // 之前有配过网就沿用, 否则不再重试连接
-        if (WifiWrapper::store::is_provisioned())
-            wifi_sta_config(WifiWrapper::store::read_ssid(), WifiWrapper::store::read_pswd());
+        if (WifiWrapper::Store::is_provisioned())
+            wifi_sta_config(WifiWrapper::Store::read_ssid(), WifiWrapper::Store::read_pswd());
         else
             disconnect();
         break;
@@ -275,8 +273,8 @@ void init() {
 	ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     _wifi_mode = WIFI_MODE_STA;
     esp_wifi_start();
-    if (WifiWrapper::store::is_provisioned()) {
-        connect(WifiWrapper::store::read_ssid(), WifiWrapper::store::read_pswd());
+    if (WifiWrapper::Store::is_provisioned()) {
+        connect(WifiWrapper::Store::read_ssid(), WifiWrapper::Store::read_pswd());
     }
     ESP_LOGI(TAG, "Station init finished.");
 }
@@ -351,8 +349,8 @@ void connect(std::string_view ssid, std::string_view pswd) {
 }
 
 void connect() {
-    if (WifiWrapper::store::is_provisioned())
-        connect(WifiWrapper::store::read_ssid(), WifiWrapper::store::read_pswd());
+    if (WifiWrapper::Store::is_provisioned())
+        connect(WifiWrapper::Store::read_ssid(), WifiWrapper::Store::read_pswd());
 }
 
 State provision(std::string_view ssid, std::string_view pswd, uint32_t timeout_ms) {
@@ -366,13 +364,13 @@ State provision(std::string_view ssid, std::string_view pswd, uint32_t timeout_m
 	switch (state()) {
     // 在超时时间内连上, 就写入nvs
     case State::OK:
-        WifiWrapper::store::write(ssid, pswd);
+        WifiWrapper::Store::write(ssid, pswd);
         break;
     // 否则回滚到之前的配置
     default:
         // 之前有配过网就沿用, 否则不再重试连接
-        if (WifiWrapper::store::is_provisioned())
-            wifi_sta_config(WifiWrapper::store::read_ssid(), WifiWrapper::store::read_pswd());
+        if (WifiWrapper::Store::is_provisioned())
+            wifi_sta_config(WifiWrapper::Store::read_ssid(), WifiWrapper::Store::read_pswd());
         else
             disconnect();
         break;
@@ -395,8 +393,8 @@ void init(std::string_view ssid, std::string_view pswd) {
     _wifi_mode = WIFI_MODE_APSTA;
     wifi_ap_config(ssid, pswd);
     esp_wifi_start();
-    if (WifiWrapper::store::is_provisioned()) {
-        connect(WifiWrapper::store::read_ssid(), WifiWrapper::store::read_pswd());
+    if (WifiWrapper::Store::is_provisioned()) {
+        connect(WifiWrapper::Store::read_ssid(), WifiWrapper::Store::read_pswd());
     }
 #if IP_NAPT
     if (enable_nat) {

@@ -1,5 +1,5 @@
 
-#include "uart.h"
+#include "uart_wrapper.h"
 #include <memory>
 #include <cstring>
 #include <driver/uart.h>
@@ -14,12 +14,7 @@ _uart_num(uart_num) {
 		.stop_bits	= UART_STOP_BITS_1,
 		.flow_ctrl	= UART_HW_FLOWCTRL_DISABLE,
 		// .use_ref_tick = false,
-		// .source_clk = UART_SCLK_DEFAULT,
-		#ifdef PROJECT_SMBNA
-		.source_clk = UART_SCLK_XTAL,
-		#else
-		.source_clk = UART_SCLK_APB,
-		#endif // 
+		.source_clk = UART_SCLK_DEFAULT,
 		// .rx_flow_ctrl_thresh = 122,
 	};
 	// We won't use a buffer for sending data.

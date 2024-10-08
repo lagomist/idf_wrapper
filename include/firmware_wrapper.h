@@ -1,13 +1,10 @@
 #pragma once
 
-#include <esp_app_desc.h>
-//定义了ota固件状态枚举
+// 定义了ota固件状态枚举
 #include <esp_flash_partitions.h>
 #include <string>
 
-namespace ota_fw {
-
-using std::string_view, std::string;
+namespace Firmware {
 
 // ESP_OTA_IMG_NEW             = 0x0U,         /*!< Monitor the first boot. In bootloader this state is changed to ESP_OTA_IMG_PENDING_VERIFY. */
 // ESP_OTA_IMG_PENDING_VERIFY  = 0x1U,         /*!< First boot for this app was. If while the second boot this state is then it will be changed to ABORTED. */
@@ -17,9 +14,7 @@ using std::string_view, std::string;
 // ESP_OTA_IMG_UNDEFINED       = 0xFFFFFFFFU,  /*!< Undefined. App can boot and work without limits. */
 using State = esp_ota_img_states_t;
 
-constexpr std::string_view STATE_NOT_FOUND = "not found";
-
-constexpr std::string_view state_str(State state) {
+constexpr std::string_view stateString(State state) {
 	switch (state) {
 		case State::ESP_OTA_IMG_NEW: return "new";
 		case State::ESP_OTA_IMG_PENDING_VERIFY: return "pending_verify";
@@ -30,19 +25,19 @@ constexpr std::string_view state_str(State state) {
 	}
 }
 
-//固件确认或回滚
+// 固件确认或回滚
 int validate();
-int rollback_and_reboot();
+int rollbackAndReboot();
 
-//ota固件状态获取
-State get_state();
-State get_state_other();
+// ota固件状态获取
+State state();
+State aotherState();
 
-//固件版本
-string fw_version();
+// 固件版本
+std::string version();
 // 如果另一个ota分区为空, 则返回"not found"
-string fw_version_other();
+std::string anotherVersion();
 
-string info();
+std::string info();
 	
-} // namespace ota_fw
+} // namespace

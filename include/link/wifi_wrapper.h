@@ -80,7 +80,7 @@ void deinit();
 
 } /* namespace WifiWrapper::Apsta */
 
-namespace store {
+namespace Store {
 
 bool is_provisioned();
 std::string read_ssid();
@@ -88,7 +88,7 @@ std::string read_pswd();
 void erase();
 int write(std::string_view ssid, std::string_view pswd);
 
-} /* namespace WifiWrapper::store */
+} /* namespace WifiWrapper::Store */
 
 
 } /* namespace WifiWrapper */
