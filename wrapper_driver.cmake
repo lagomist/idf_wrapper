@@ -10,22 +10,28 @@ list (APPEND dependencies
     esp_https_ota
 )
 
+list(APPEND priv_inc_list
+    ${COMPONENT_DIR}/config
+)
+
 list(APPEND inc_list
     ${COMPONENT_DIR}/include
     ${COMPONENT_DIR}/include/link
     ${COMPONENT_DIR}/include/peripheral
     ${COMPONENT_DIR}/include/protocol
-    ${COMPONENT_DIR}/misc
+    ${COMPONENT_DIR}/include/misc
+    ${COMPONENT_DIR}/include/utility
 )
 
 list (APPEND src_list
-    ${COMPONENT_DIR}/src/nvs_wrapper.cpp
-    ${COMPONENT_DIR}/src/firmware_wrapper.cpp
+    ${COMPONENT_DIR}/src/misc/firmware_wrapper.cpp
     ${COMPONENT_DIR}/src/link/wifi_wrapper.cpp
     ${COMPONENT_DIR}/src/link/gattc_wrapper.cpp
     ${COMPONENT_DIR}/src/link/gatts_wrapper.cpp
     ${COMPONENT_DIR}/src/link/gatts_table_wrapper.cpp
+    ${COMPONENT_DIR}/src/peripheral/nvs_wrapper.cpp
     ${COMPONENT_DIR}/src/peripheral/uart_wrapper.cpp
     ${COMPONENT_DIR}/src/peripheral/pwm_wrapper.cpp
     ${COMPONENT_DIR}/src/protocol/socket_wrapper.cpp
+    ${COMPONENT_DIR}/src/protocol/mqtt_wrapper.cpp
 )
