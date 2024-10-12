@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cstdint>
-//UART内部自己用了信号量和锁，确保线程安全。
+// UART内部自己用了信号量和锁，确保线程安全。
 class UART {
 public:
 	// parity 0表示无，2表示偶校验位，3表示奇校验位

@@ -257,7 +257,7 @@ State provision(std::string_view ssid, std::string_view pswd, uint32_t timeout_m
             disconnect();
         break;
 	}
-	ESP_LOGW(TAG, "provision %s", state_str(state()));
+	ESP_LOGW(TAG, "provision %s", stateString(state()));
 	return state();
 }
 
@@ -375,7 +375,7 @@ State provision(std::string_view ssid, std::string_view pswd, uint32_t timeout_m
             disconnect();
         break;
 	}
-	ESP_LOGW(TAG, "provision %s", state_str(state()));
+	ESP_LOGW(TAG, "provision %s", stateString(state()));
 	return state();
 }
 

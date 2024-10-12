@@ -17,7 +17,7 @@ enum class State : uint8_t {
 
 using Mode = wifi_mode_t;
 
-constexpr const char* state_str(State state) {
+constexpr const char* stateString(State state) {
 	switch (state) {
 		case State::OK: return "ok";
 		case State::ERR: return "error";
