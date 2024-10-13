@@ -58,7 +58,7 @@ static ConnCallback         _disconnect_cb = nullptr;
 static std::atomic_bool		_is_connected = false;
 
 static esp_attr_value_t _default_attr_value = {
-    .attr_max_len = DEFAULT_GATTS_CHAR_VAL_LEN_MAX,
+    .attr_max_len = WrapperConfig::CHAR_MAX_LEN,
     .attr_len     = sizeof(_default_char_value),
     .attr_value   = _default_char_value,
 };
@@ -478,7 +478,7 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
 
 
 void adv_update(uint8_t* data, int len) {
-    if (len > MANUFACTURER_DATA_LEN_MAX) return;
+    if (len > WrapperConfig::ADV_MAX_LEN) return;
     _adv_data.p_manufacturer_data = data;
     _adv_data.manufacturer_len = len;
     if(!_is_connected){
@@ -563,8 +563,8 @@ void start_service(uint16_t app_id) {
 }
 
 void start_default_service(uint16_t app_id) {
-    add_service(app_id, BLE_WRAPPER_DEFAULT_SVC_UUID);
-    add_char(app_id, BLE_WRAPPER_DEFAULT_CHAR_UUID, CharProperty::READ_WRITE_NOTIFY);
+    add_service(app_id, WrapperConfig::DEFAULT_SVC_UUID);
+    add_char(app_id, WrapperConfig::DEFAULT_CHAR_UUID, CharProperty::READ_WRITE_NOTIFY);
     start_service(app_id);
 }
 
@@ -650,7 +650,7 @@ void init(std::string_view host_name) {
         return;
     }
 
-    ret = esp_ble_gatt_set_local_mtu(BLE_WRAPPER_DEFAULT_MTU_SIZE);
+    ret = esp_ble_gatt_set_local_mtu(WrapperConfig::DEFAULT_MTU_SIZE);
     if (ret){
         ESP_LOGE(TAG, "set local  MTU failed, error code = %x", ret);
     }

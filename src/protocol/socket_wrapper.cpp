@@ -1,87 +1,159 @@
 #include "socket_wrapper.h"
+#include "wrapper_config.h"
+
 #include "esp_log.h"
 #include <lwip/sockets.h>
-#include <stdio.h>        // for perror
 #include <arpa/inet.h>    // for inet_addr
 #include <unistd.h>       // for close
 
-#define MAX_CONNECT_NUM 10
+namespace SocketWrapper {
 
 constexpr static const char* TAG = "socket_wrapper" ;
 
-int TCPSocket::server(uint16_t port) {
-	int fd = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
-	if (fd < 0) {
-		perror("socket");
-		return -1;
+Socket::Socket(Protocol proto) {
+	_protocol = proto;
+	switch (_protocol) {
+	case Protocol::TCP :
+		this->_sockfd = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+		break;
+	case Protocol::UDP :
+		this->_sockfd = ::socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+		break;
+	default:
+		break;
 	}
+}
 
-	int optval = 1;
-	/* 解除端口占用 */
-	if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) < 0) {
-		perror("setsockopt\n");
-		return -1;
-	}
+Socket::~Socket() {
+	::close(this->_sockfd);
+}
 
-	struct sockaddr_in server_addr = {
+int Socket::bind(uint16_t port) {
+	struct sockaddr_in sock_addr = {
 		.sin_family = AF_INET,
 		.sin_port = htons(port),
 		.sin_addr = {
-		.s_addr = htonl(INADDR_ANY),
+			.s_addr = htonl(INADDR_ANY),
 		},
 	};
-
-	if (bind(fd, (struct sockaddr *)&server_addr, sizeof(struct sockaddr)) < 0) {
-		perror("bind");
-		::close(fd);
-		return -1;
-	}
-
-	if(listen(fd, MAX_CONNECT_NUM) < 0) {
-		perror("listen");
-		::close(fd);
-		return -1;
-	}
-
-	_sockfd = fd;
-
-	return _sockfd;
+	return ::bind(this->_sockfd, (struct sockaddr *)&sock_addr, sizeof(struct sockaddr));
 }
 
-int TCPSocket::client(const char *ip, uint16_t port) {
-	int fd = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
-	if (fd < 0){
-		perror("socket");
-		return -1;
-	}
+int Socket::recv(void *rx_buf, int buf_len) {
+	if (this->_sockfd < 0) return this->_sockfd;
+	if (this->_protocol == Protocol::UDP) return -1;
+	// Keep receiving until we have a reply
+	int len = ::recv(this->_sockfd, rx_buf, buf_len, 0);
+	
+	return len;
+}
 
-	struct sockaddr_in server_addr {
-		.sin_family = AF_INET,
-		.sin_port = htons(port),
-		.sin_addr = {
-		.s_addr = inet_addr(ip),
+int Socket::recvfrom(OBuf rx_buf, std::string* ip, uint16_t* port) {
+	if (this->_sockfd < 0) return this->_sockfd;
+	struct sockaddr_in source_addr = {0}; 
+	socklen_t socklen = sizeof(source_addr);
+	int len = ::recvfrom(this->_sockfd, rx_buf.data(), rx_buf.size(), 0, (struct sockaddr *)&source_addr, (socklen_t *)&socklen);
+	if (len > 0 && ip && port) {
+		*ip = inet_ntoa(source_addr.sin_addr);
+		*port = source_addr.sin_port;
+	}
+	
+	return len;
+}
+
+int Socket::send(const void *tx_buf, int buf_len) {
+	if (this->_sockfd < 0) return this->_sockfd;
+	if (this->_protocol == Protocol::UDP) return -1;
+    int to_write = buf_len;
+    while (to_write > 0) {
+		int written = ::send(this->_sockfd, (uint8_t *)tx_buf + (buf_len - to_write), to_write, 0);
+        if (written < 0) {
+            return -2;
+        }
+        to_write -= written;
+    }
+    return buf_len;
+}
+
+int Socket::sendto(std::string_view ip, uint16_t port, IBuf data) {
+	if (this->_sockfd < 0) return this->_sockfd;
+    int to_write = data.size();
+	/* 目标地址设置 */
+    struct sockaddr_in dest_addr = {
+        .sin_family = AF_INET,
+        .sin_port = htons(port),
+        .sin_addr = {
+			.s_addr = inet_addr(ip.data()),
 		},
-	};
+    };
+    while (to_write > 0) {
+		int written = ::sendto(this->_sockfd, data.data() + (data.size() - to_write), to_write, 0, (struct sockaddr *)&dest_addr, sizeof(dest_addr));
+        if (written < 0) {
+            return -1;
+        }
+        to_write -= written;
+    }
+    return data.size();
+}
 
-	if (::connect(fd, (struct sockaddr *)&server_addr, sizeof(struct sockaddr)) < 0) {
-		perror("connect");
-		::close(fd);
+
+
+/* ---------------- Server ---------------- */
+
+Server::Server(Protocol proto) {
+	this->_socket = new Socket(proto);
+}
+
+Server::~Server() {
+	if (this->_socket != nullptr)
+		delete this->_socket;
+}
+
+int Server::init(uint16_t port) {
+	if (this->_socket == nullptr) {
 		return -1;
 	}
 
-	_sockfd = fd;
+	if (this->_socket->protocol() == Protocol::TCP) {
+		int optval = 1;
+		/* 解除端口占用 */
+		if (setsockopt(this->_socket->fd(), SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) < 0) {
+			ESP_LOGE(TAG, "Setting reuseaddr error.");
+			return -2;
+		}
+	} else {
+		// 设置socket为广播
+		int broadcast_enable = 1;
+		if (setsockopt(this->_socket->fd(), SOL_SOCKET, SO_BROADCAST, &broadcast_enable, sizeof(broadcast_enable)) < 0) {
+			ESP_LOGE(TAG, "Setting broadcast error.");
+			return -2;
+		}
+	}
 
-	return _sockfd;
+	if (this->_socket->bind(port) < 0) {
+		ESP_LOGE(TAG, "Server bind error.");
+		return -3;
+	}
+
+	if (this->_socket->protocol() == Protocol::TCP) {
+		if (::listen(this->_socket->fd(), 3) < 0) {
+			ESP_LOGE(TAG, "Server listen error.");
+			return -4;
+		}
+	}
+
+	return this->_socket->fd();
 }
 
-int TCPSocket::accept(int server_fd) {
+int Server::accept() {
+	if (this->_socket->protocol() != Protocol::TCP) {
+		return -1;
+	}
 	struct sockaddr_in client_addr = {0};
 	socklen_t addrlen = sizeof(struct sockaddr);
-	int fd = ::accept(server_fd, (struct sockaddr *)&client_addr, &addrlen);
+	int fd = ::accept(this->_socket->fd(), (struct sockaddr *)&client_addr, &addrlen);
 	if(fd < 0) {
-		perror("accept");
-		::close(fd);
-		return -1;
+		return -2;
 	}
 	// Set tcp keepalive option
 	int keepAlive = 1;          // 开启keepalive属性
@@ -92,62 +164,77 @@ int TCPSocket::accept(int server_fd) {
 	setsockopt(fd, IPPROTO_TCP, TCP_KEEPIDLE, (void *)&keepIdle, sizeof(keepIdle));
 	setsockopt(fd, IPPROTO_TCP, TCP_KEEPINTVL, (void *)&keepInterval, sizeof(keepInterval));
 	setsockopt(fd, IPPROTO_TCP, TCP_KEEPCNT, (void *)&keepCount, sizeof(keepCount));
-	char addr[32];
-	if (client_addr.sin_family == PF_INET) {
-		inet_ntoa_r(client_addr.sin_addr, addr, sizeof(addr) - 1);
-		ESP_LOGI(TAG, "socket accepted ip address: %s\n", addr);
-	}
 
-	_sockfd = fd;
-
-	return _sockfd;
+	return fd;
 }
 
-int TCPSocket::recv(void *rx_buf, int buf_len, int timeval_usec) {
-	int fp0 = 0;
-	int maxfd = (_sockfd > fp0) ? (_sockfd + 1) : (fp0 + 1);
-	struct timeval timeout = {
-		.tv_sec = timeval_usec / 1000000,
-		.tv_usec = timeval_usec % 1000000,
-	};
-	fd_set readset;
-	FD_ZERO(&readset);
-	FD_SET(_sockfd, &readset);
-	if (select(maxfd, &readset, NULL, NULL, (timeval_usec < 0) ? NULL : &timeout) < 0) {
-		perror("select");
+void Server::stop() {
+	::shutdown(this->_socket->fd(), SHUT_RD);
+}
+
+
+
+
+/* ---------------- Client ---------------- */
+
+
+Client::Client(Protocol proto) {
+	this->_socket = new Socket(proto);
+}
+
+Client::~Client() {
+	if (this->_socket != nullptr)
+		delete this->_socket;
+}
+
+int Client::init(uint16_t port) {
+	if (this->_socket == nullptr){
+		ESP_LOGE(TAG, "Client socket error.");
 		return -1;
 	}
-	if (FD_ISSET(_sockfd, &readset)) {
-		int recv_bytes = ::recv(_sockfd, rx_buf, buf_len, MSG_DONTWAIT);
-		if (recv_bytes < 0){
-			perror("recv");
-			return -1;
-		}
-		return recv_bytes;
+	if (this->_socket->bind(port) < 0) {
+		ESP_LOGE(TAG, "Client socket bind error.");
+		return -2;
+	}
+	if (this->_socket->protocol() == Protocol::UDP) {
+		// 设置套接字选项以启用地址重用
+		int reuseEnable = 1;
+		setsockopt(this->_socket->fd(), SOL_SOCKET, SO_REUSEADDR, &reuseEnable, sizeof(reuseEnable));
+
+		// Enable broadcasting
+		int broadcast_enable = 1;
+		setsockopt(this->_socket->fd(), SOL_SOCKET, SO_BROADCAST, &broadcast_enable, sizeof(broadcast_enable));
 	}
 
-	return 0;
+	return this->_socket->fd();
 }
 
-int TCPSocket::send(const void *tx_buf, int buf_len) {
-	for (int to_send = buf_len; to_send > 0;){
-		int sent_bytes = ::send(_sockfd, (uint8_t *)tx_buf + (buf_len - to_send), to_send, MSG_DONTWAIT);
-		if (sent_bytes < 0) {
-			perror("send");
-			return -1;
-		}
-		to_send -= sent_bytes;
+int Client::connect(std::string_view ip, uint16_t port) {
+	if (this->_socket == nullptr){
+		return -1;
 	}
-	return buf_len;
+	if (this->_socket->protocol() != Protocol::TCP){
+		return -2;
+	}
+
+	int fd = this->_socket->fd();
+	struct sockaddr_in server_addr {
+		.sin_family = AF_INET,
+		.sin_port = htons(port),
+		.sin_addr = {
+		.s_addr = inet_addr(ip.data()),
+		},
+	};
+
+	if (::connect(fd, (struct sockaddr *)&server_addr, sizeof(struct sockaddr)) < 0) {
+		return -3;
+	}
+
+	return fd;
 }
 
-int TCPSocket::close() {
-	::shutdown(_sockfd, SHUT_RDWR);
-	::close(_sockfd);
-	_sockfd = 0;
-	return 0;
+void Client::shutdown() {
+	::shutdown(this->_socket->fd(), SHUT_RDWR);
 }
 
-int TCPSocket::fd() {
-	return _sockfd;
-}
+} /* namespace SocketWrapper */

@@ -29,24 +29,40 @@ extern "C" void app_main()
     if (!WifiWrapper::Store::is_provisioned()) {
         WifiWrapper::Station::provision("ESP-SOFTAP", "3325035137");
     }
-    vTaskDelay(pdMS_TO_TICKS(5000));
-    if (!WifiWrapper::Station::is_connected())
-        WifiWrapper::Station::disconnect();
 
     BleWrapper::DefaultServer::init("ESP-TEST");
     BleWrapper::DefaultServer::registerRecvCallback(recv_cb);
 
-    TCPSocket socket;
-    socket.server(8080);
-    socket.accept(socket.fd());
-    char buf[64];
-
     while (1)
     {
-        int len = socket.recv(buf, 64);
-        if (len > 0) {
-            ESP_LOGI(TAG, "%.*s", len, buf);
+        if (WifiWrapper::State() == WifiWrapper::State::CONNECTED) {
+            break;
         }
+        vTaskDelay(pdMS_TO_TICKS(1000));
     }
     
+    
+    SocketWrapper::Server tcp_server(SocketWrapper::Protocol::TCP);
+    int res = tcp_server.init(8888);
+    if (res < 0) {
+        ESP_LOGE(TAG, "tcp server init failed.");
+        return;
+    }
+    int sock;
+    while (1) {
+        sock = tcp_server.accept();
+        if (sock < 0) {
+            ESP_LOGE(TAG, "tcp server accept failed.");
+            break;
+        } else {
+            SocketWrapper::Socket con_client(sock);
+            while (1) {
+                char buf[128];
+                int len = con_client.recv(buf, sizeof(buf));
+                if (len > 0) {
+                    ESP_LOGI(TAG, "tcp recv: %.*s", len, buf);
+                }
+            }
+        }
+    }
 }

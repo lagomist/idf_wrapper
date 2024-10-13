@@ -1,17 +1,22 @@
 #pragma once
 
+#include <stdint.h>
+
+namespace WrapperConfig {
+
 /* wifi wrapper config */
-#define WIFI_WRAPPER_CONFIG_DNS                 "8.8.8.8"
-#define WIFI_WRAPPER_CONFIG_CHANNEL             7
-#define WIFI_WRAPPER_SOFTAP_MAXCON              8
+constexpr const char* WIFI_DNS      = "8.8.8.8";
+constexpr uint8_t WIFI_CHANNEL      = 7;
+constexpr uint8_t WIFI_MAXCON       = 8;
 
 /* ble wrapper config */
-#define BLE_WRAPPER_DEFAULT_SVC_UUID			0x00FF
-#define BLE_WRAPPER_DEFAULT_CHAR_UUID			0xFF01
-#define BLE_WRAPPER_DEFAULT_MTU_SIZE			512
-/**
-*  The max length of characteristic value. When the GATT client performs a write or prepare write operation,
-*  the data length must be less than DEFAULT_GATTS_CHAR_VAL_LEN_MAX.
-*/
-#define DEFAULT_GATTS_CHAR_VAL_LEN_MAX          256
-#define MANUFACTURER_DATA_LEN_MAX               30
+constexpr uint16_t DEFAULT_SVC_UUID     = 0x00FF;
+constexpr uint16_t DEFAULT_CHAR_UUID    = 0xFF01;
+constexpr uint16_t DEFAULT_MTU_SIZE     = 512;
+constexpr uint16_t CHAR_MAX_LEN         = 256;
+constexpr uint8_t ADV_MAX_LEN           = 30;
+
+/* socket wrapper config */
+constexpr uint8_t SOCK_MAXCON_NUM       = 8;
+
+}

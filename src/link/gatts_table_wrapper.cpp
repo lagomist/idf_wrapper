@@ -92,9 +92,9 @@ constexpr static const uint8_t  CHAR_PROP_ALL       = ESP_GATT_CHAR_PROP_BIT_REA
 
 
 // GATT Service
-static uint16_t _primary_service_uuid = BLE_WRAPPER_DEFAULT_SVC_UUID;
+static uint16_t _primary_service_uuid = WrapperConfig::DEFAULT_SVC_UUID;
 // Characteristic UUID
-static uint16_t  _primary_char_uuid = BLE_WRAPPER_DEFAULT_CHAR_UUID;
+static uint16_t  _primary_char_uuid = WrapperConfig::DEFAULT_CHAR_UUID;
 /* 预定义特征值 */
 static uint8_t  _primary_char_val[1] = {0x00};
 static uint8_t  _primary_char_ccc[2] = {0x00,0x00};
@@ -116,7 +116,7 @@ static const esp_gatts_attr_db_t _gatt_db[HRS_IDX_NB] = {
     /* Characteristic Value */
 	[IDX_PRIMARY_CHAR_VAL]         =		// 自定义UUID 服务特征值
     {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&_primary_char_uuid, ESP_GATT_PERM_READ|ESP_GATT_PERM_WRITE,
-    DEFAULT_GATTS_CHAR_VAL_LEN_MAX, sizeof(_primary_char_val), (uint8_t *)_primary_char_val}},
+    WrapperConfig::CHAR_MAX_LEN, sizeof(_primary_char_val), (uint8_t *)_primary_char_val}},
 	
     /* Client Characteristic Configuration Descriptor */
 	[IDX_PRIMARY_CHAR_CFG]         =		// 0x2902	 客户端特征配置描述符
@@ -213,7 +213,7 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
                 break;
             }
 
-            if (param->write.len < DEFAULT_GATTS_CHAR_VAL_LEN_MAX) {
+            if (param->write.len < WrapperConfig::CHAR_MAX_LEN) {
                 // 写入特征值
                 esp_ble_gatts_set_attr_value(param->write.handle, param->write.len, param->write.value);
             }
@@ -282,13 +282,10 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
     case ESP_GATTS_CREAT_ATTR_TAB_EVT:
         if (param->add_attr_tab.status != ESP_GATT_OK){
             ESP_LOGE(TAG, "create attribute table failed, error code=0x%x", param->add_attr_tab.status);
-        }
-        else if (param->add_attr_tab.num_handle != HRS_IDX_NB){
+        } else if (param->add_attr_tab.num_handle != HRS_IDX_NB){
             ESP_LOGE(TAG, "create attribute table abnormally, num_handle (%d) \
                     doesn't equal to HRS_IDX_NB(%d)", param->add_attr_tab.num_handle, HRS_IDX_NB);
-        }
-        else {
-            ESP_LOGI(TAG, "create attribute table successfully, the number handle = %d\n",param->add_attr_tab.num_handle);
+        } else {
             memcpy(_gatt_handle_table, param->add_attr_tab.handles, sizeof(_gatt_handle_table));
             esp_ble_gatts_start_service(_gatt_handle_table[IDX_SVC]);
         }
@@ -328,7 +325,7 @@ void deauth() {
 }
 
 void advUpdeta(uint8_t* data, int len) {
-    if (len > MANUFACTURER_DATA_LEN_MAX) return;
+    if (len > WrapperConfig::ADV_MAX_LEN) return;
     _adv_data.p_manufacturer_data = data;
     _adv_data.manufacturer_len = len;
     if(!_is_connected){
@@ -399,7 +396,7 @@ void init(std::string_view host_name) {
         return;
     }
 
-    ret = esp_ble_gatt_set_local_mtu(BLE_WRAPPER_DEFAULT_MTU_SIZE);
+    ret = esp_ble_gatt_set_local_mtu(WrapperConfig::DEFAULT_MTU_SIZE);
     if (ret){
         ESP_LOGE(TAG, "set local  MTU failed, error code = %x", ret);
     }

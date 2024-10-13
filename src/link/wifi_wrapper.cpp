@@ -22,7 +22,7 @@ static std::atomic<esp_netif_t*> _ap_netif = nullptr;
 static std::atomic<esp_netif_t*> _sta_netif = nullptr;
 static std::atomic<Callback> _connect_cb = +[](){};
 static std::atomic<Callback> _disconnect_cb = +[](){};
-static std::atomic<State> _state = State::NO_AP_FOUND;
+static std::atomic<State> _state = State::IDLE;
 static std::atomic_bool	_auto_reconnect = false;
 static std::atomic<Mode> _wifi_mode = WIFI_MODE_NULL;
 #if IP_NAPT
@@ -78,7 +78,7 @@ static void wifi_sta_config(std::string_view ssid, std::string_view pswd) {
     memcpy(wifi_cfg.sta.ssid, ssid.data(), std::min(sizeof(wifi_cfg.sta.ssid), ssid.size()));
     memcpy(wifi_cfg.sta.password, pswd.data(), std::min(sizeof(wifi_cfg.sta.password), pswd.size()));
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_cfg));
-	ESP_LOGI(TAG, "sta ssid,%.*s, password,%.*s", ssid.size(), ssid.data(), pswd.size(), pswd.data());
+	ESP_LOGI(TAG, "sta ssid:%.*s, password:%.*s", ssid.size(), ssid.data(), pswd.size(), pswd.data());
 }
 
 static void wifi_ap_config(std::string_view ssid, std::string_view pswd) {
@@ -87,8 +87,8 @@ static void wifi_ap_config(std::string_view ssid, std::string_view pswd) {
         ESP_LOGE(TAG, "mode config error!");
         return;
     }
-    wifi_cfg.ap.channel = WIFI_WRAPPER_CONFIG_CHANNEL;
-    wifi_cfg.ap.max_connection = WIFI_WRAPPER_SOFTAP_MAXCON;
+    wifi_cfg.ap.channel = WrapperConfig::WIFI_CHANNEL;
+    wifi_cfg.ap.max_connection = WrapperConfig::WIFI_MAXCON;
     wifi_cfg.ap.authmode = WIFI_AUTH_WPA_WPA2_PSK;
     wifi_cfg.ap.ssid_hidden = false;
     wifi_cfg.ap.beacon_interval = 100;
@@ -99,7 +99,7 @@ static void wifi_ap_config(std::string_view ssid, std::string_view pswd) {
         wifi_cfg.ap.authmode = WIFI_AUTH_OPEN;
     }
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_cfg));
-    ESP_LOGI(TAG, "ap ssid,%.*s, password,%.*s", ssid.size(), ssid.data(), pswd.size(), pswd.data());
+    ESP_LOGI(TAG, "ap ssid:%.*s, password:%.*s", ssid.size(), ssid.data(), pswd.size(), pswd.data());
 
 }
 
@@ -126,7 +126,7 @@ static void event_handler(void* arg, esp_event_base_t event_base,
     if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
         /* wifi disconnected event */
         auto data = (wifi_event_sta_disconnected_t*)event_data;
-        if (_state == State::OK) {
+        if (_state == State::CONNECTED) {
             ESP_LOGE(TAG, "disconnected reason:%d,rssi:%d", data->reason, data->rssi);
             _disconnect_cb.load()();
         }
@@ -140,7 +140,7 @@ static void event_handler(void* arg, esp_event_base_t event_base,
     } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
         ESP_LOGI(TAG, "wifi connected.");
         /* wifi connection successful */
-        _state = State::OK;
+        _state = State::CONNECTED;
         _connect_cb.load()();
 
 #if IP_NAPT
@@ -238,14 +238,14 @@ void connect() {
 State provision(std::string_view ssid, std::string_view pswd, uint32_t timeout_ms) {
 	connect(ssid, pswd);
     for(int i = 0; i < 10; i++) {
-		int ret = state() != State::OK ? -1 : 0;
+		int ret = state() != State::CONNECTED ? -1 : 0;
 		if(ret >= 0)
 			break;
         vTaskDelay(pdMS_TO_TICKS(timeout_ms / 10));
 	}
 	switch (state()) {
     // 在超时时间内连上, 就写入nvs
-    case State::OK:
+    case State::CONNECTED:
         WifiWrapper::Store::write(ssid, pswd);
         break;
     // 否则回滚到之前的配置
@@ -356,14 +356,14 @@ void connect() {
 State provision(std::string_view ssid, std::string_view pswd, uint32_t timeout_ms) {
 	connect(ssid, pswd);
     for(int i = 0; i < 10; i++) {
-		int ret = state() != State::OK ? -1 : 0;
+		int ret = state() != State::CONNECTED ? -1 : 0;
 		if(ret >= 0)
 			break;
         vTaskDelay(pdMS_TO_TICKS(timeout_ms / 10));
 	}
 	switch (state()) {
     // 在超时时间内连上, 就写入nvs
-    case State::OK:
+    case State::CONNECTED :
         WifiWrapper::Store::write(ssid, pswd);
         break;
     // 否则回滚到之前的配置
@@ -405,7 +405,7 @@ void init(std::string_view ssid, std::string_view pswd) {
 
         // Set custom dns server address for dhcp server
         esp_netif_dns_info_t dnsserver;
-        dnsserver.ip.u_addr.ip4.addr = esp_ip4addr_aton(WIFI_WRAPPER_CONFIG_DNS);
+        dnsserver.ip.u_addr.ip4.addr = esp_ip4addr_aton(WrapperConfig::WIFI_DNS);
         dnsserver.ip.type = ESP_IPADDR_TYPE_V4;
         esp_netif_set_dns_info(ap_netif, ESP_NETIF_DNS_MAIN, &dnsserver);
 

@@ -8,22 +8,22 @@ namespace WifiWrapper {
 using Callback = void(*)();
 
 enum class State : uint8_t {
-	OK,
-	ERR,
+	IDLE,
 	WAITTING,
-	PSWD_ERR,
+	CONNECTED,
 	NO_AP_FOUND,
+	ERROR,
 };
 
 using Mode = wifi_mode_t;
 
 constexpr const char* stateString(State state) {
 	switch (state) {
-		case State::OK: return "ok";
-		case State::ERR: return "error";
+		case State::IDLE: return "idle";
 		case State::WAITTING: return "waitting";
-		case State::PSWD_ERR: return "pswd_err";
+		case State::CONNECTED: return "connected";
 		case State::NO_AP_FOUND: return "no_ap_found";
+		case State::ERROR: return "error";
 		default: return "unknown";
 	}
 }

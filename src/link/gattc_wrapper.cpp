@@ -364,8 +364,8 @@ void addInterestedChar(uint16_t char_uuid) {
 }
 
 void createDefaultService(std::string_view server_name) {
-    config(server_name, BLE_WRAPPER_DEFAULT_SVC_UUID);
-    addInterestedChar(BLE_WRAPPER_DEFAULT_CHAR_UUID);
+    config(server_name, WrapperConfig::DEFAULT_SVC_UUID);
+    addInterestedChar(WrapperConfig::DEFAULT_CHAR_UUID);
 }
 
 
@@ -391,7 +391,7 @@ int write(uint16_t uuid, uint8_t *data, int data_len) {
 }
 
 int write(IBuf data) {
-	return write(BLE_WRAPPER_DEFAULT_CHAR_UUID, (uint8_t *)data.data(), data.size());
+	return write(WrapperConfig::DEFAULT_CHAR_UUID, (uint8_t *)data.data(), data.size());
 }
 
 void registerRecvCallback(RecvCallback cb) {
@@ -455,7 +455,7 @@ void init() {
         return;
     }
     
-    ret = esp_ble_gatt_set_local_mtu(BLE_WRAPPER_DEFAULT_MTU_SIZE);
+    ret = esp_ble_gatt_set_local_mtu(WrapperConfig::DEFAULT_MTU_SIZE);
     if (ret) {
         ESP_LOGE(TAG, "set local MTU failed, error code = %x", ret);
     }
