@@ -212,6 +212,14 @@ void init(const Cfg& cfg) {
         return;
     }
 #endif
+    // clear subscribe instance list
+    for (topic_subscribe_inst* list = _topic_sub_list_head; list; ) {
+        topic_subscribe_inst* next = list->next;
+        free(list);
+        list = next;
+    }
+    _topic_sub_list_head = nullptr;
+
     esp_mqtt_client_config_t mqtt_cfg = {};
     mqtt_cfg.broker.address.uri = cfg.broker_uri.data(),
     mqtt_cfg.session.protocol_ver = (esp_mqtt_protocol_ver_t )cfg.protocol,
