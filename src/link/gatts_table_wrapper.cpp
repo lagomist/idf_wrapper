@@ -1,6 +1,9 @@
 #include "ble_wrapper.h"
 #include "wrapper_config.h"
 
+#include "sdkconfig.h"
+#if CONFIG_BT_ENABLED
+
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_gap_ble_api.h"
@@ -416,3 +419,5 @@ void deinit() {
 } /* namespace DefaultServer */
 
 } /* namespace BleWrapper */
+
+#endif /* if CONFIG_BT_ENABLED */

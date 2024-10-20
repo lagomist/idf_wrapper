@@ -8,6 +8,7 @@ list (APPEND dependencies
     esp_app_format
     mqtt
     esp_https_ota
+    json
 )
 
 list(APPEND priv_inc_list
@@ -24,6 +25,7 @@ list(APPEND inc_list
 )
 
 list (APPEND src_list
+    ${COMPONENT_DIR}/src/misc/json_wrapper.cpp
     ${COMPONENT_DIR}/src/misc/firmware_wrapper.cpp
     ${COMPONENT_DIR}/src/misc/ota_wrapper.cpp
     ${COMPONENT_DIR}/src/link/wifi_wrapper.cpp
@@ -35,4 +37,6 @@ list (APPEND src_list
     ${COMPONENT_DIR}/src/peripheral/pwm_wrapper.cpp
     ${COMPONENT_DIR}/src/protocol/socket_wrapper.cpp
     ${COMPONENT_DIR}/src/protocol/mqtt_wrapper.cpp
+    ${COMPONENT_DIR}/src/utility/utility.cpp
+    ${COMPONENT_DIR}/src/utility/shell.cpp
 )

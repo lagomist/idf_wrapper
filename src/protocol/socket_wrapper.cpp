@@ -29,13 +29,12 @@ Socket::~Socket() {
 }
 
 int Socket::bind(uint16_t port) {
-	struct sockaddr_in sock_addr = {
-		.sin_family = AF_INET,
-		.sin_port = htons(port),
-		.sin_addr = {
-			.s_addr = htonl(INADDR_ANY),
-		},
-	};
+	struct sockaddr_in sock_addr;
+	memset(&sock_addr, 0, sizeof(sockaddr_in));
+	sock_addr.sin_family = AF_INET;
+	sock_addr.sin_port = htons(port);
+	sock_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+	
 	return ::bind(this->_sockfd, (struct sockaddr *)&sock_addr, sizeof(struct sockaddr));
 }
 
@@ -48,14 +47,14 @@ int Socket::recv(void *rx_buf, int buf_len) {
 	return len;
 }
 
-int Socket::recvfrom(OBuf rx_buf, std::string* ip, uint16_t* port) {
+int Socket::recvfrom(OBuf rx_buf, std::string& ip, uint16_t& port) {
 	if (this->_sockfd < 0) return this->_sockfd;
-	struct sockaddr_in source_addr = {0}; 
+	struct sockaddr_in source_addr; 
 	socklen_t socklen = sizeof(source_addr);
 	int len = ::recvfrom(this->_sockfd, rx_buf.data(), rx_buf.size(), 0, (struct sockaddr *)&source_addr, (socklen_t *)&socklen);
-	if (len > 0 && ip && port) {
-		*ip = inet_ntoa(source_addr.sin_addr);
-		*port = source_addr.sin_port;
+	if (len > 0) {
+		ip = inet_ntoa(source_addr.sin_addr);
+		port = source_addr.sin_port;
 	}
 	
 	return len;
@@ -79,13 +78,12 @@ int Socket::sendto(std::string_view ip, uint16_t port, IBuf data) {
 	if (this->_sockfd < 0) return this->_sockfd;
     int to_write = data.size();
 	/* 目标地址设置 */
-    struct sockaddr_in dest_addr = {
-        .sin_family = AF_INET,
-        .sin_port = htons(port),
-        .sin_addr = {
-			.s_addr = inet_addr(ip.data()),
-		},
-    };
+    struct sockaddr_in dest_addr;
+	memset(&dest_addr, 0, sizeof(sockaddr_in));
+	dest_addr.sin_family = AF_INET;
+	dest_addr.sin_port = htons(port);
+	dest_addr.sin_addr.s_addr = inet_addr(ip.data());
+	
     while (to_write > 0) {
 		int written = ::sendto(this->_sockfd, data.data() + (data.size() - to_write), to_write, 0, (struct sockaddr *)&dest_addr, sizeof(dest_addr));
         if (written < 0) {
@@ -136,7 +134,7 @@ int Server::accept() {
 	if (this->_socket.protocol() != Protocol::TCP) {
 		return -1;
 	}
-	struct sockaddr_in client_addr = {0};
+	struct sockaddr_in client_addr;
 	socklen_t addrlen = sizeof(struct sockaddr);
 	int fd = ::accept(this->_socket.fd(), (struct sockaddr *)&client_addr, &addrlen);
 	if(fd < 0) {
@@ -188,13 +186,11 @@ int Client::connect(std::string_view ip, uint16_t port) {
 	}
 
 	int fd = this->_socket.fd();
-	struct sockaddr_in server_addr {
-		.sin_family = AF_INET,
-		.sin_port = htons(port),
-		.sin_addr = {
-		.s_addr = inet_addr(ip.data()),
-		},
-	};
+	struct sockaddr_in server_addr;
+	memset(&server_addr, 0, sizeof(sockaddr_in));
+	server_addr.sin_family = AF_INET;
+	server_addr.sin_port = htons(port);
+	server_addr.sin_addr.s_addr = inet_addr(ip.data());
 
 	if (::connect(fd, (struct sockaddr *)&server_addr, sizeof(struct sockaddr)) < 0) {
 		return -2;
@@ -205,6 +201,19 @@ int Client::connect(std::string_view ip, uint16_t port) {
 
 void Client::shutdown() {
 	::shutdown(this->_socket.fd(), SHUT_RDWR);
+}
+
+
+int socketSend(int sock, const void* data, int len) {
+    int to_write = len;
+    while (to_write > 0) {
+		int written = ::send(sock, (uint8_t *)data + (len - to_write), to_write, 0);
+        if (written < 0) {
+            return -1;
+        }
+        to_write -= written;
+    }
+    return len;
 }
 
 } /* namespace SocketWrapper */

@@ -15,6 +15,8 @@ enum class Protocol : uint8_t {
 	UDP
 };
 
+int socketSend(int sock, const void* data, int len);
+
 class Socket {
 public:
 	Socket(Protocol proto);
@@ -25,7 +27,7 @@ public:
 	
 	int recv(void *rx_buf, int buf_len);
 	int send(const void *tx_buf, int buf_len);
-	int recvfrom(OBuf rx_buf, std::string* ip, uint16_t* port);
+	int recvfrom(OBuf rx_buf, std::string& ip, uint16_t& port);
 	int sendto(std::string_view ip, uint16_t port, IBuf data);
 	int bind(uint16_t port);
 

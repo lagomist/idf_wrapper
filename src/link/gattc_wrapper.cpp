@@ -1,6 +1,9 @@
 #include "ble_wrapper.h"
 #include "wrapper_config.h"
 
+#include "sdkconfig.h"
+#if CONFIG_BT_ENABLED
+
 #include "freertos/FreeRTOS.h"
 #include "freertos/event_groups.h"
 #include "esp_bt.h"
@@ -476,3 +479,5 @@ void deinit() {
 } /* namespace BleWrapper::Client */
 
 } /* namespace BleWrapper */
+
+#endif /* if CONFIG_BT_ENABLED */

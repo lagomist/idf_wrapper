@@ -25,9 +25,6 @@ static std::atomic<Callback> _disconnect_cb = +[](){};
 static std::atomic<State> _state = State::IDLE;
 static std::atomic_bool	_auto_reconnect = false;
 static std::atomic<Mode> _wifi_mode = WIFI_MODE_NULL;
-#if IP_NAPT
-static bool _enable_nat = false;
-#endif
 
 namespace Store {
 
@@ -144,7 +141,7 @@ static void event_handler(void* arg, esp_event_base_t event_base,
         _connect_cb.load()();
 
 #if IP_NAPT
-        if (_enable_nat) {
+        {
             esp_netif_dns_info_t dns;
             if (esp_netif_get_dns_info(_sta_netif, ESP_NETIF_DNS_MAIN, &dns) == ESP_OK) {
                 esp_netif_set_dns_info(_ap_netif, ESP_NETIF_DNS_MAIN, &dns);
@@ -397,20 +394,19 @@ void init(std::string_view ssid, std::string_view pswd) {
         connect(WifiWrapper::Store::read_ssid(), WifiWrapper::Store::read_pswd());
     }
 #if IP_NAPT
-    if (enable_nat) {
-        _enable_nat = enable_nat;
+    {
         // Enable DNS (offer) for dhcp server
         dhcps_offer_t dhcps_dns_value = OFFER_DNS;
-        esp_netif_dhcps_option(ap_netif, ESP_NETIF_OP_SET, ESP_NETIF_DOMAIN_NAME_SERVER, &dhcps_dns_value, sizeof(dhcps_dns_value));
+        esp_netif_dhcps_option(_ap_netif, ESP_NETIF_OP_SET, ESP_NETIF_DOMAIN_NAME_SERVER, &dhcps_dns_value, sizeof(dhcps_dns_value));
 
         // Set custom dns server address for dhcp server
         esp_netif_dns_info_t dnsserver;
         dnsserver.ip.u_addr.ip4.addr = esp_ip4addr_aton(WrapperConfig::WIFI_DNS);
         dnsserver.ip.type = ESP_IPADDR_TYPE_V4;
-        esp_netif_set_dns_info(ap_netif, ESP_NETIF_DNS_MAIN, &dnsserver);
+        esp_netif_set_dns_info(_ap_netif, ESP_NETIF_DNS_MAIN, &dnsserver);
 
         // !!! 必须启动esp_wifi_start后再设置，否则ap无网络
-        esp_netif_napt_enable(ap_netif);
+        esp_netif_napt_enable(_ap_netif);
         ESP_LOGI(TAG, "NAPT is enabled.");
     }
 #endif

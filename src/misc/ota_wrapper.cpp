@@ -106,19 +106,19 @@ uint8_t getPercentage() {
 }
 
 void start(std::string_view url) {
-     esp_http_client_config_t http_config = {
-		.url = url.data(),
-		.timeout_ms = 10000,
-		.buffer_size = 2048,
-		.skip_cert_common_name_check = true,
-		.crt_bundle_attach = esp_crt_bundle_attach,
-		.keep_alive_enable = true,
-	};
+    esp_http_client_config_t http_config;
+    memset(&http_config, 0, sizeof(http_config));
+    http_config.url = url.data();
+    http_config.timeout_ms = 10000;
+    http_config.buffer_size = 2048;
+    http_config.skip_cert_common_name_check = true;
+    http_config.crt_bundle_attach = esp_crt_bundle_attach;
+    http_config.keep_alive_enable = true;
 
 	// https_ota_config
-	esp_https_ota_config_t ota_config = {
-		.http_config = &http_config,
-	};
+	esp_https_ota_config_t ota_config;
+    memset(&ota_config, 0, sizeof(ota_config));
+    ota_config.http_config = &http_config;
 
     esp_err_t err = esp_https_ota_begin(&ota_config, &_https_ota_handle);
     if (err != ESP_OK) {

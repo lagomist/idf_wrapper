@@ -1,6 +1,9 @@
 #include "ble_wrapper.h"
 #include "wrapper_config.h"
 
+#include "sdkconfig.h"
+#if CONFIG_BT_ENABLED
+
 #include "esp_gap_ble_api.h"
 #include "esp_bt_main.h"
 #include "esp_bt.h"
@@ -673,3 +676,5 @@ void deinit() {
 } /* namespace server */
 
 } /* namespace BleWrapper */
+
+#endif /* if CONFIG_BT_ENABLED */

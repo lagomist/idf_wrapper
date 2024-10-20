@@ -42,15 +42,15 @@ extern "C" void app_main()
     }
     
     
-    SocketWrapper::Server tcp_server(SocketWrapper::Protocol::TCP);
-    int res = tcp_server.init(8888);
+    SocketWrapper::Server TcpServer(SocketWrapper::Protocol::TCP);
+    int res = TcpServer.init(8888);
     if (res < 0) {
         ESP_LOGE(TAG, "tcp server init failed.");
         return;
     }
     int sock;
     while (1) {
-        sock = tcp_server.accept();
+        sock = TcpServer.accept();
         if (sock < 0) {
             ESP_LOGE(TAG, "tcp server accept failed.");
             break;
