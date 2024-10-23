@@ -1,4 +1,4 @@
-#include "json_wrapper.h"  
+#include "json_wrapper.h"
 #include "esp_log.h"
 
 constexpr static char TAG[] = "json_wrapper";
@@ -53,7 +53,7 @@ bool JsonWrapper::isString() const {
 bool JsonWrapper::isNumber() const {
     return cJSON_IsNumber(_root);
 }
-  
+
 bool JsonWrapper::isBool() const {
     return cJSON_IsBool(_root);
 }
@@ -62,7 +62,17 @@ bool JsonWrapper::isNull() const {
     return cJSON_IsNull(_root);
 }
 
-int JsonWrapper::getArraySize() {
+void JsonWrapper::setArray() {
+    clear();
+    _root = cJSON_CreateArray();
+}
+
+int JsonWrapper::getArraySize(const std::string& key) const {
+    const cJSON* item = cJSON_GetObjectItem(_root, key.c_str());
+    return cJSON_GetArraySize(item);
+}
+
+int JsonWrapper::getArraySize() const {
     return cJSON_GetArraySize(_root);
 }
   
@@ -70,56 +80,32 @@ JsonWrapper JsonWrapper::getObject(const std::string& key) const {
     return JsonWrapper(cJSON_GetObjectItem(_root, key.c_str()));
 }
   
+std::string JsonWrapper::getString(const std::string& key) const {
+    const cJSON* item = cJSON_GetObjectItem(_root, key.c_str());
+    if (!cJSON_IsString(item)) {
+        return {};
+    }
+    return item->valuestring;
+}
+
 std::string JsonWrapper::getString() const {
-    if (!isString()) {
+    if (!cJSON_IsString(_root)) {
         return {};
     }
     return _root->valuestring;
 }
-  
-float JsonWrapper::getNumber() const {
-    if (!isNumber()) {
-        return 0;
+
+float JsonWrapper::getNumber(const std::string& key) const{
+    const cJSON* item = cJSON_GetObjectItem(_root, key.c_str());
+    if (!cJSON_IsNumber(item)) {
+        return {};
     }
-    return _root->valuedouble;
-}
-  
-bool JsonWrapper::getBool() const {
-    if (!isBool()) {
-        return false;
-    }
-    return _root->valueint != 0;
-}
-  
-void JsonWrapper::setObject() {
-    clear();
-    _root = cJSON_CreateObject();
-    _is_child = false;
+    return (float )item->valuedouble;
 }
 
-void JsonWrapper::setArray() {
-    clear();
-    _root = cJSON_CreateArray();
-}
-
-void JsonWrapper::setString(const std::string& str) {
-    clear();
-    _root = cJSON_CreateString(str.c_str());
-}
-
-void JsonWrapper::setNumber(float num) {
-    clear();
-    _root = cJSON_CreateNumber(num);
-}
-  
-void JsonWrapper::setBool(bool boolVal) {
-    clear();
-    _root = cJSON_CreateBool(boolVal);
-}
-  
-void JsonWrapper::setNull() {
-    clear();
-    _root = cJSON_CreateNull();
+bool JsonWrapper::getBool(const std::string& key) const {
+    const cJSON* item = cJSON_GetObjectItem(_root, key.c_str());
+    return cJSON_IsTrue(item);
 }
 
 void JsonWrapper::addObject(const std::string& key, JsonWrapper& obj) {
@@ -130,23 +116,46 @@ void JsonWrapper::addArray(JsonWrapper& arr) {
     cJSON_AddItemToArray(_root, arr._root);
 }
 
-// JsonWrapper& JsonWrapper::operator[](const std::string& key) {
-//     return getObject(key);
-// }
-
-const JsonWrapper& JsonWrapper::operator[](const std::string& key) const {
-    return getObject(key);
+void JsonWrapper::add(const std::string& key, const std::string& value) {
+    cJSON_AddStringToObject(_root, key.c_str(), value.c_str());
 }
 
-const JsonWrapper& JsonWrapper::operator[](int index) const {
-    if (!isArray()) return {};
-    return JsonWrapper(cJSON_GetArrayItem(_root, index));
+void JsonWrapper::add(const std::string& key, int value) {
+    cJSON_AddNumberToObject(_root, key.c_str(), value);
+} 
+
+void JsonWrapper::add(const std::string& key, float value) {
+    cJSON_AddNumberToObject(_root, key.c_str(), value);
+}
+
+JsonWrapper& JsonWrapper::operator[](const std::string& key) {
+    if (_value) {
+        delete _value;
+    }
+    _value = new JsonWrapper(cJSON_GetObjectItem(_root, key.c_str()));
+    return *_value;
+}
+
+JsonWrapper& JsonWrapper::operator[](int index) {
+    if (_value) {
+        delete _value;
+    }
+    if (!isArray()) {
+        _value = new JsonWrapper();
+    } else {
+        _value = new JsonWrapper(cJSON_GetArrayItem(_root, index));
+    }
+    return *_value;
 }
   
 void JsonWrapper::clear() {
     if (_root && !_is_child) {
         cJSON_Delete(_root);
         _root = nullptr;
+    }
+    if (_value) {
+        delete _value;
+        _value = nullptr;
     }
     _is_child = false;
 }
