@@ -13,9 +13,9 @@ _uart_num(uart_num) {
 		.parity		= (uart_parity_t)parity,
 		.stop_bits	= UART_STOP_BITS_1,
 		.flow_ctrl	= UART_HW_FLOWCTRL_DISABLE,
-		// .use_ref_tick = false,
+		.rx_flow_ctrl_thresh = 0,
 		.source_clk = UART_SCLK_DEFAULT,
-		// .rx_flow_ctrl_thresh = 122,
+		.flags 		= 0,
 	};
 	// We won't use a buffer for sending data.
 	ESP_ERROR_CHECK(uart_param_config((uart_port_t)_uart_num, &uart_config));

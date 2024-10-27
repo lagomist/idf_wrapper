@@ -47,7 +47,8 @@ int PwmWrapper::init(int pin, uint32_t freq_hz, float dc) {
 			.duty_resolution = LEDC_TIMER_10_BIT,
 			.timer_num = timer_num,
 			.freq_hz = freq_hz,
-			.clk_cfg = LEDC_AUTO_CLK
+			.clk_cfg = LEDC_AUTO_CLK,
+			.deconfigure = false
 		};
 		// Set configuration of timer0 for high speed channels
 		assert(ledc_timer_config(&ledc_timer) == ESP_OK);
@@ -60,6 +61,7 @@ int PwmWrapper::init(int pin, uint32_t freq_hz, float dc) {
 		.intr_type	= LEDC_INTR_DISABLE,
 		.timer_sel	= timer_num,
 		.duty		= uint32_t((1<<PWM_RESOLUTION) * dc),
+		.hpoint  	= 0,
 		.flags		= {0},
 	};
 	// Set LED Controller with previously prepared configuration
