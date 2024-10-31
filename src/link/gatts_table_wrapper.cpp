@@ -15,12 +15,13 @@
 #include <string.h>
 #include <atomic>
 
+namespace Wrapper {
 
-namespace BleWrapper {
+namespace BLE {
 
 namespace DefaultServer {
 
-constexpr static const char *TAG = "gatts_table_wrapper";
+constexpr static const char TAG[] = "Wrapper::BLE::DefaultServer";
 
 
 static std::atomic_uint16_t _mtu_size = 27;
@@ -418,6 +419,8 @@ void deinit() {
 
 } /* namespace DefaultServer */
 
-} /* namespace BleWrapper */
+} /* namespace BLE */
+
+} /* namespace Wrapper */
 
 #endif /* if CONFIG_BT_ENABLED */

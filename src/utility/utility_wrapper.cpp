@@ -1,10 +1,12 @@
-#include "utility.h"
+#include "utility_wrapper.h"
 #include <sha/sha_dma.h>
 #include <esp_random.h>
 #include <string.h>	//memcpy
 #include <stdlib.h>
 #include <time.h>
 #include <ctype.h>
+
+namespace Wrapper {
 
 namespace Utility {
 
@@ -114,3 +116,5 @@ OBuf snprint(const char format[], ...) {
 }
 
 } // namespace utility
+
+}

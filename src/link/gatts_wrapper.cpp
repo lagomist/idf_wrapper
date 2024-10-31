@@ -15,8 +15,9 @@
 #include <memory.h>
 
 
+namespace Wrapper {
 
-namespace BleWrapper {
+namespace BLE {
 
 namespace Server {
 
@@ -47,7 +48,7 @@ struct gatts_profile_inst {
 };
 
 
-constexpr static const char *TAG = "gatts_wrapper";
+constexpr static const char *TAG = "Wrapper::BLE::Server";
 
 /* 服务实例配置文件链表头 */
 static gatts_profile_inst*  _profile_inst_head = nullptr;
@@ -675,6 +676,8 @@ void deinit() {
 
 } /* namespace server */
 
-} /* namespace BleWrapper */
+} /* namespace BLEr */
+
+} /* namespace Wrapper */
 
 #endif /* if CONFIG_BT_ENABLED */

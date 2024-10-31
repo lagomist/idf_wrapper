@@ -3,7 +3,9 @@
 #include "bufdef.h"
 #include <string_view>
 
-namespace BleWrapper {
+namespace Wrapper {
+
+namespace BLE {
 
 namespace Server {
 
@@ -154,7 +156,7 @@ void deinit();
 void advUpdeta(uint8_t* data, int len);
 
 
-} /* namespace BleWrapper::DefaultServer */
+} /* namespace BLE::DefaultServer */
 
 
 namespace Client {
@@ -180,4 +182,6 @@ void registerDisconnectCallback(ConnCallback cb);
 }
 
 
-} /* namespace BleWrapper */
+} /* namespace BLE */
+
+} /* namespace Wrapper */

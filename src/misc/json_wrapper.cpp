@@ -1,24 +1,26 @@
 #include "json_wrapper.h"
 #include "esp_log.h"
 
-constexpr static char TAG[] = "json_wrapper";
+namespace Wrapper {
 
-JsonWrapper::JsonWrapper() : _root(cJSON_CreateObject()) {}
+constexpr static char TAG[] = "Wrapper::JsonObject";
+
+JsonObject::JsonObject() : _root(cJSON_CreateObject()) {}
   
-JsonWrapper::JsonWrapper(const std::string& jsonString) : _root(nullptr) {
+JsonObject::JsonObject(const std::string& jsonString) : _root(nullptr) {
     parse(jsonString);
 }
 
-JsonWrapper::JsonWrapper(cJSON* json) : _root(json) {
+JsonObject::JsonObject(cJSON* json) : _root(json) {
     // do not free json memory
     _is_child = true;
 }
 
-JsonWrapper::~JsonWrapper() {
+JsonObject::~JsonObject() {
     clear();
 }
   
-bool JsonWrapper::parse(const std::string& jsonString) {
+bool JsonObject::parse(const std::string& jsonString) {
     clear();
     _root = cJSON_Parse(jsonString.c_str());
     if (!_root) {
@@ -31,56 +33,56 @@ bool JsonWrapper::parse(const std::string& jsonString) {
     return true;
 }
   
-std::string JsonWrapper::serialize() const {
+std::string JsonObject::serialize() const {
     char* jsonString = cJSON_PrintUnformatted(_root);
     std::string result(jsonString);
     cJSON_free(jsonString);
     return result;
 }
   
-bool JsonWrapper::isObject() const {
+bool JsonObject::isObject() const {
     return cJSON_IsObject(_root);
 }
   
-bool JsonWrapper::isArray() const {
+bool JsonObject::isArray() const {
     return cJSON_IsArray(_root);
 }
   
-bool JsonWrapper::isString() const {
+bool JsonObject::isString() const {
     return cJSON_IsString(_root);
 }
   
-bool JsonWrapper::isNumber() const {
+bool JsonObject::isNumber() const {
     return cJSON_IsNumber(_root);
 }
 
-bool JsonWrapper::isBool() const {
+bool JsonObject::isBool() const {
     return cJSON_IsBool(_root);
 }
   
-bool JsonWrapper::isNull() const {
+bool JsonObject::isNull() const {
     return cJSON_IsNull(_root);
 }
 
-void JsonWrapper::setArray() {
+void JsonObject::setArray() {
     clear();
     _root = cJSON_CreateArray();
 }
 
-int JsonWrapper::getArraySize(const std::string& key) const {
+int JsonObject::getArraySize(const std::string& key) const {
     const cJSON* item = cJSON_GetObjectItem(_root, key.c_str());
     return cJSON_GetArraySize(item);
 }
 
-int JsonWrapper::getArraySize() const {
+int JsonObject::getArraySize() const {
     return cJSON_GetArraySize(_root);
 }
   
-JsonWrapper JsonWrapper::getObject(const std::string& key) const {
-    return JsonWrapper(cJSON_GetObjectItem(_root, key.c_str()));
+JsonObject JsonObject::getObject(const std::string& key) const {
+    return JsonObject(cJSON_GetObjectItem(_root, key.c_str()));
 }
   
-std::string JsonWrapper::getString(const std::string& key) const {
+std::string JsonObject::getString(const std::string& key) const {
     const cJSON* item = cJSON_GetObjectItem(_root, key.c_str());
     if (!cJSON_IsString(item)) {
         return {};
@@ -88,14 +90,14 @@ std::string JsonWrapper::getString(const std::string& key) const {
     return item->valuestring;
 }
 
-std::string JsonWrapper::getString() const {
+std::string JsonObject::getString() const {
     if (!cJSON_IsString(_root)) {
         return {};
     }
     return _root->valuestring;
 }
 
-float JsonWrapper::getNumber(const std::string& key) const{
+float JsonObject::getNumber(const std::string& key) const{
     const cJSON* item = cJSON_GetObjectItem(_root, key.c_str());
     if (!cJSON_IsNumber(item)) {
         return {};
@@ -103,52 +105,52 @@ float JsonWrapper::getNumber(const std::string& key) const{
     return (float )item->valuedouble;
 }
 
-bool JsonWrapper::getBool(const std::string& key) const {
+bool JsonObject::getBool(const std::string& key) const {
     const cJSON* item = cJSON_GetObjectItem(_root, key.c_str());
     return cJSON_IsTrue(item);
 }
 
-void JsonWrapper::addObject(const std::string& key, JsonWrapper& obj) {
+void JsonObject::addObject(const std::string& key, JsonObject& obj) {
     cJSON_AddItemToObject(_root, key.c_str(), obj._root);
 }
 
-void JsonWrapper::addArray(JsonWrapper& arr) {
+void JsonObject::addArray(JsonObject& arr) {
     cJSON_AddItemToArray(_root, arr._root);
 }
 
-void JsonWrapper::add(const std::string& key, const std::string& value) {
+void JsonObject::add(const std::string& key, const std::string& value) {
     cJSON_AddStringToObject(_root, key.c_str(), value.c_str());
 }
 
-void JsonWrapper::add(const std::string& key, int value) {
+void JsonObject::add(const std::string& key, int value) {
     cJSON_AddNumberToObject(_root, key.c_str(), value);
 } 
 
-void JsonWrapper::add(const std::string& key, float value) {
+void JsonObject::add(const std::string& key, float value) {
     cJSON_AddNumberToObject(_root, key.c_str(), value);
 }
 
-JsonWrapper& JsonWrapper::operator[](const std::string& key) {
+JsonObject& JsonObject::operator[](const std::string& key) {
     if (_value) {
         delete _value;
     }
-    _value = new JsonWrapper(cJSON_GetObjectItem(_root, key.c_str()));
+    _value = new JsonObject(cJSON_GetObjectItem(_root, key.c_str()));
     return *_value;
 }
 
-JsonWrapper& JsonWrapper::operator[](int index) {
+JsonObject& JsonObject::operator[](int index) {
     if (_value) {
         delete _value;
     }
     if (!isArray()) {
-        _value = new JsonWrapper();
+        _value = new JsonObject();
     } else {
-        _value = new JsonWrapper(cJSON_GetArrayItem(_root, index));
+        _value = new JsonObject(cJSON_GetArrayItem(_root, index));
     }
     return *_value;
 }
   
-void JsonWrapper::clear() {
+void JsonObject::clear() {
     if (_root && !_is_child) {
         cJSON_Delete(_root);
         _root = nullptr;
@@ -158,4 +160,6 @@ void JsonWrapper::clear() {
         _value = nullptr;
     }
     _is_child = false;
+}
+
 }

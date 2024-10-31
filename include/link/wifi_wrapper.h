@@ -3,7 +3,8 @@
 #include <esp_wifi_types.h>
 #include <string>
 
-namespace WifiWrapper {
+namespace Wrapper {
+namespace WiFi {
 
 using Callback = void(*)();
 
@@ -51,14 +52,14 @@ int get_rssi();
 void init();
 void deinit();
 
-} /* namespace WifiWrapper::Station */
+} /* namespace WiFi::Station */
 
 namespace Softap {
 
 void init(std::string_view ssid, std::string_view pswd);
 void deinit();
 
-} /* namespace WifiWrapper::Softap */
+} /* namespace WiFi::Softap */
 
 
 namespace Apsta {
@@ -78,7 +79,7 @@ int get_rssi();
 void init(std::string_view ssid, std::string_view pswd);
 void deinit();
 
-} /* namespace WifiWrapper::Apsta */
+} /* namespace WiFi::Apsta */
 
 namespace Store {
 
@@ -88,7 +89,9 @@ std::string read_pswd();
 void erase();
 int write(std::string_view ssid, std::string_view pswd);
 
-} /* namespace WifiWrapper::Store */
+} /* namespace WiFi::Store */
 
 
-} /* namespace WifiWrapper */
+} /* namespace WiFi */
+
+} /* namespcae Wrapper */

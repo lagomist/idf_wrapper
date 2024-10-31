@@ -7,6 +7,8 @@
 #include <string_view>
 #include <functional>
 
+namespace Wrapper {
+
 namespace Utility {
 
 template <typename T = uint16_t, T POLY = 0x8005, T INIT = 0x0000, T XOROUT = 0x0000, bool REFIN = true, bool REFOUT = true>
@@ -162,6 +164,9 @@ constexpr static OBuf format(const T& val) {
   
 } // namespace Utility 
 
+
 constexpr uint32_t operator "" _hash(const char* str, size_t n) {
 	return Utility::BKDR_hash(str);
+}
+
 }

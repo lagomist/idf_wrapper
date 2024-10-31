@@ -9,7 +9,10 @@
 #include <atomic>
 
 
-namespace MqttWrapper {
+namespace Wrapper {
+
+namespace MQTT {
+
 
 struct topic_subscribe_inst {
     char topic[128];
@@ -19,7 +22,7 @@ struct topic_subscribe_inst {
 };
 
 
-static const char *TAG = "mqtt_wrapper";
+static const char *TAG = "Wrapper::MQTT";
 
 /* MQTT clinet handle */
 static esp_mqtt_client_handle_t _mqtt_client = nullptr;
@@ -269,4 +272,7 @@ void deinit() {
 	_mqtt_client = nullptr;
 }
 
-}
+
+} // namespace MQTT
+
+} // namespace Wrapper

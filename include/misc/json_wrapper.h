@@ -5,11 +5,13 @@
 // #include <vector>
 #include <cJSON.h>
 
-class JsonWrapper {
+namespace Wrapper {
+
+class JsonObject {
 public:
-    JsonWrapper();
-    JsonWrapper(const std::string& jsonString);
-    ~JsonWrapper();
+    JsonObject();
+    JsonObject(const std::string& jsonString);
+    ~JsonObject();
 
     // Parse JSON string into a dictionary
     bool parse(const std::string& jsonString);
@@ -29,7 +31,7 @@ public:
     void setArray();
 
     // Getters for object
-    JsonWrapper getObject(const std::string& key) const;
+    JsonObject getObject(const std::string& key) const;
     std::string getString(const std::string& key) const;
     float getNumber(const std::string& key) const;
     bool getBool(const std::string& key) const;
@@ -37,21 +39,23 @@ public:
     int getArraySize() const;
     std::string getString() const;
 
-    void addObject(const std::string& key, JsonWrapper& obj);
-    void addArray(JsonWrapper& arr);
+    void addObject(const std::string& key, JsonObject& obj);
+    void addArray(JsonObject& arr);
     void add(const std::string& key, const std::string& value);
     void add(const std::string& key, int value);
     void add(const std::string& key, float value);
 
     // Utility functions
-    JsonWrapper& operator[](const std::string& key);
-    JsonWrapper& operator[](int index);
+    JsonObject& operator[](const std::string& key);
+    JsonObject& operator[](int index);
 
 private:
     cJSON* _root;
-    JsonWrapper* _value = nullptr;
+    JsonObject* _value = nullptr;
     bool _is_child = false;
 
-    JsonWrapper(cJSON* json);
+    JsonObject(cJSON* json);
     void clear();
 };
+
+}

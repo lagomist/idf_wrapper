@@ -3,7 +3,8 @@
 #include <algorithm>
 #include <array>
 
-static const char TAG[] = "pwm_wrapper";
+namespace Wrapper {
+
 // 10bit resolution, can be 10~13
 static constexpr uint8_t PWM_RESOLUTION = 10;
 
@@ -11,14 +12,14 @@ static std::array<uint32_t, LEDC_TIMER_MAX> _tim_freq = {0};
 
 static std::array<bool, LEDC_CHANNEL_MAX> _used_channel = {0};
 
-PwmWrapper::~PwmWrapper() {
+PWM::~PWM() {
 	if (_channel < LEDC_CHANNEL_MAX) {
 		_used_channel[_channel] = false;
 	}
 	stop();
 }
 
-int PwmWrapper::init(int pin, uint32_t freq_hz, float dc) {
+int PWM::init(int pin, uint32_t freq_hz, float dc) {
 	_channel = LEDC_CHANNEL_MAX;
 	_duty_cycle = dc;
 	// 查找可用定时器。频率相等或等于0（未使用），说明timer可用，退出查找
@@ -68,24 +69,27 @@ int PwmWrapper::init(int pin, uint32_t freq_hz, float dc) {
 	return ledc_channel_config(&ledc_channel);
 }
 
-void PwmWrapper::setDutyCycle(float dc) {
+void PWM::setDutyCycle(float dc) {
 	ledc_set_duty(LEDC_LOW_SPEED_MODE, (ledc_channel_t)_channel, (1 << PWM_RESOLUTION) * dc);
 	ledc_update_duty(LEDC_LOW_SPEED_MODE, (ledc_channel_t)_channel);
 	_duty_cycle = dc;
 }
 
-float PwmWrapper::getDutyCycle() {
+float PWM::getDutyCycle() {
 	return _duty_cycle;
 }
 
-void PwmWrapper::stop() {
+void PWM::stop() {
 	ledc_stop(LEDC_LOW_SPEED_MODE, (ledc_channel_t)_channel, 1);
 }
 
-void PwmWrapper::fade(float dc, uint32_t time_ms) {
+void PWM::fade(float dc, uint32_t time_ms) {
 	ledc_set_fade_time_and_start(LEDC_LOW_SPEED_MODE,
 								(ledc_channel_t)_channel,
 								(1 << PWM_RESOLUTION) * dc,
 								time_ms,
 								LEDC_FADE_WAIT_DONE);
 }
+
+
+} // namespace Wrapper

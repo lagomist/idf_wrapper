@@ -2,7 +2,9 @@
 
 #include <string>
 
-namespace OtaWrapper {
+namespace Wrapper {
+
+namespace OTA {
 
 enum class Status : uint8_t {
 	IDLE,
@@ -20,5 +22,7 @@ void abort();
 Status status();
 int getSize();
 uint8_t getPercentage();
+
+}
 
 }

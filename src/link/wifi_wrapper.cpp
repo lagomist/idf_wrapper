@@ -13,10 +13,12 @@
 #include <string.h>
 #include <atomic>
 
-namespace WifiWrapper {
+namespace Wrapper {
+
+namespace WiFi {
 
 
-constexpr static const char* TAG = "wifi_wrapper";
+constexpr static const char* TAG = "Wrapper::WiFI";
 
 static std::atomic<esp_netif_t*> _ap_netif = nullptr;
 static std::atomic<esp_netif_t*> _sta_netif = nullptr;
@@ -32,34 +34,34 @@ constexpr static const char* NVS_KEY_WIFI_SSID = "wifi_ssid";
 constexpr static const char* NVS_KEY_WIFI_PSWD = "wifi_pswd";
 
 bool is_provisioned() {
-    int len = NvsWrapper::getSize(NVS_KEY_WIFI_SSID);
+    int len = Wrapper::NVS::getSize(NVS_KEY_WIFI_SSID);
 	return len > 0 ? true : false;
 }
 
 std::string read_ssid() {
     char ssid[32] = {};
-    NvsWrapper::read(NVS_KEY_WIFI_SSID, ssid);
+    Wrapper::NVS::read(NVS_KEY_WIFI_SSID, ssid);
 	// 检查最后一字节是否有值, 如果有值则截断
 	return {ssid, ssid[sizeof(ssid) - 1] ? sizeof(ssid) : strlen(ssid)};
 }
 
 std::string read_pswd() {
     char pswd[64] = {};
-    NvsWrapper::read(NVS_KEY_WIFI_PSWD, pswd);
+    Wrapper::NVS::read(NVS_KEY_WIFI_PSWD, pswd);
 	// 检查最后一字节是否有值, 如果有值则截断
 	return {pswd, pswd[sizeof(pswd) - 1] ? sizeof(pswd) : strlen(pswd)};
 }
 
 int write(std::string_view ssid, std::string_view pswd) {
     int res;
-	res = NvsWrapper::write(NVS_KEY_WIFI_SSID, ssid.data(), ssid.size());
-    res = NvsWrapper::write(NVS_KEY_WIFI_PSWD, pswd.data(), pswd.size());
+	res = Wrapper::NVS::write(NVS_KEY_WIFI_SSID, ssid.data(), ssid.size());
+    res = Wrapper::NVS::write(NVS_KEY_WIFI_PSWD, pswd.data(), pswd.size());
     return res;
 }
 
 void erase() {
-	NvsWrapper::erase(NVS_KEY_WIFI_SSID);
-    NvsWrapper::erase(NVS_KEY_WIFI_PSWD);
+	Wrapper::NVS::erase(NVS_KEY_WIFI_SSID);
+    Wrapper::NVS::erase(NVS_KEY_WIFI_PSWD);
 	ESP_LOGW(TAG, "Store erased.");
 }
 
@@ -228,8 +230,8 @@ void connect(std::string_view ssid, std::string_view pswd) {
 }
 
 void connect() {
-    if (WifiWrapper::Store::is_provisioned())
-        connect(WifiWrapper::Store::read_ssid(), WifiWrapper::Store::read_pswd());
+    if (WiFi::Store::is_provisioned())
+        connect(WiFi::Store::read_ssid(), WiFi::Store::read_pswd());
 }
 
 State provision(std::string_view ssid, std::string_view pswd, uint32_t timeout_ms) {
@@ -243,13 +245,13 @@ State provision(std::string_view ssid, std::string_view pswd, uint32_t timeout_m
 	switch (state()) {
     // 在超时时间内连上, 就写入nvs
     case State::CONNECTED:
-        WifiWrapper::Store::write(ssid, pswd);
+        WiFi::Store::write(ssid, pswd);
         break;
     // 否则回滚到之前的配置
     default:
         // 之前有配过网就沿用, 否则不再重试连接
-        if (WifiWrapper::Store::is_provisioned())
-            wifi_sta_config(WifiWrapper::Store::read_ssid(), WifiWrapper::Store::read_pswd());
+        if (WiFi::Store::is_provisioned())
+            wifi_sta_config(WiFi::Store::read_ssid(), WiFi::Store::read_pswd());
         else
             disconnect();
         break;
@@ -270,8 +272,8 @@ void init() {
 	ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     _wifi_mode = WIFI_MODE_STA;
     esp_wifi_start();
-    if (WifiWrapper::Store::is_provisioned()) {
-        connect(WifiWrapper::Store::read_ssid(), WifiWrapper::Store::read_pswd());
+    if (WiFi::Store::is_provisioned()) {
+        connect(WiFi::Store::read_ssid(), WiFi::Store::read_pswd());
     }
     ESP_LOGI(TAG, "Station init finished.");
 }
@@ -282,7 +284,7 @@ void deinit() {
     _wifi_mode = WIFI_MODE_NULL;
 }
 
-} /* namespace WifiWrapper::Station */
+} /* namespace WiFi::Station */
 
 
 namespace Softap {
@@ -309,7 +311,7 @@ void deinit() {
     _wifi_mode = WIFI_MODE_NULL;
 }
 
-} /* namespace WifiWrapper::Softap */
+} /* namespace WiFi::Softap */
 
 
 namespace Apsta {
@@ -346,8 +348,8 @@ void connect(std::string_view ssid, std::string_view pswd) {
 }
 
 void connect() {
-    if (WifiWrapper::Store::is_provisioned())
-        connect(WifiWrapper::Store::read_ssid(), WifiWrapper::Store::read_pswd());
+    if (WiFi::Store::is_provisioned())
+        connect(WiFi::Store::read_ssid(), WiFi::Store::read_pswd());
 }
 
 State provision(std::string_view ssid, std::string_view pswd, uint32_t timeout_ms) {
@@ -361,13 +363,13 @@ State provision(std::string_view ssid, std::string_view pswd, uint32_t timeout_m
 	switch (state()) {
     // 在超时时间内连上, 就写入nvs
     case State::CONNECTED :
-        WifiWrapper::Store::write(ssid, pswd);
+        WiFi::Store::write(ssid, pswd);
         break;
     // 否则回滚到之前的配置
     default:
         // 之前有配过网就沿用, 否则不再重试连接
-        if (WifiWrapper::Store::is_provisioned())
-            wifi_sta_config(WifiWrapper::Store::read_ssid(), WifiWrapper::Store::read_pswd());
+        if (WiFi::Store::is_provisioned())
+            wifi_sta_config(WiFi::Store::read_ssid(), WiFi::Store::read_pswd());
         else
             disconnect();
         break;
@@ -390,8 +392,8 @@ void init(std::string_view ssid, std::string_view pswd) {
     _wifi_mode = WIFI_MODE_APSTA;
     wifi_ap_config(ssid, pswd);
     esp_wifi_start();
-    if (WifiWrapper::Store::is_provisioned()) {
-        connect(WifiWrapper::Store::read_ssid(), WifiWrapper::Store::read_pswd());
+    if (WiFi::Store::is_provisioned()) {
+        connect(WiFi::Store::read_ssid(), WiFi::Store::read_pswd());
     }
 #if IP_NAPT
     {
@@ -421,11 +423,13 @@ void deinit() {
     _wifi_mode = WIFI_MODE_NULL;
 }
 
-} /* namespace WifiWrapper::Apsta */
+} /* namespace WiFi::Apsta */
 
 void netif_init() {
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
 }
 
-} /* namespcae WifiWrapper */
+} /* namespcae WiFi */
+
+} /* namespcae Wrapper */

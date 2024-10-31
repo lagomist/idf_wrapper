@@ -3,9 +3,11 @@
 #include <esp_log.h>
 #include <string.h>
 
+namespace Wrapper {
+
 namespace Firmware {
 
-static constexpr char TAG[] = "firmware_wrapper";
+static constexpr char TAG[] = "Wrapper::Firmware";
 
 int validate() {
 	State state = Firmware::state();
@@ -62,4 +64,6 @@ std::string info() {
 			std::string(",sta,") + std::string(stateString(aotherState()));
 }
 
-} // namespace ota_fw
+} // namespace
+
+}

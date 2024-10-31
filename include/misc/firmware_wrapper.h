@@ -4,6 +4,8 @@
 #include <esp_flash_partitions.h>
 #include <string>
 
+namespace Wrapper {
+
 namespace Firmware {
 
 // ESP_OTA_IMG_NEW             = 0x0U,         /*!< Monitor the first boot. In bootloader this state is changed to ESP_OTA_IMG_PENDING_VERIFY. */
@@ -41,3 +43,5 @@ std::string anotherVersion();
 std::string info();
 	
 } // namespace
+
+}

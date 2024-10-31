@@ -1,6 +1,9 @@
 #pragma once
 
 #include <cstdint>
+
+namespace Wrapper {
+
 // UART内部自己用了信号量和锁，确保线程安全。
 class UART {
 public:
@@ -21,3 +24,5 @@ private:
 	int _uart_num;
 	int _rx_buf_len = 129;
 };
+
+}

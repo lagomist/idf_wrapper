@@ -16,11 +16,13 @@
 #include <atomic>
 
 
-namespace BleWrapper {
+namespace Wrapper {
+
+namespace BLE {
 
 namespace Client{
 
-constexpr static const char *TAG = "gattc_wrapper";
+constexpr static const char *TAG = "Wrapper::BLE::Client";
 
 
 static std::atomic_uint16_t _mtu_size = 27;
@@ -476,8 +478,10 @@ void deinit() {
 	esp_bt_controller_deinit();
 }
 
-} /* namespace BleWrapper::Client */
+} /* namespace BLE::Client */
 
-} /* namespace BleWrapper */
+} /* namespace BLE */
+
+} /* namespace Wrapper */
 
 #endif /* if CONFIG_BT_ENABLED */

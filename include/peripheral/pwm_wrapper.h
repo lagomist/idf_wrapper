@@ -2,10 +2,12 @@
 
 #include <stdint.h>
 
-class PwmWrapper {
+namespace Wrapper {
+
+class PWM {
 public:
-	PwmWrapper() {}
-	~PwmWrapper();
+	PWM() {}
+	~PWM();
 
 	int init(int pin, uint32_t freq_hz, float dc = 0);
 
@@ -19,3 +21,5 @@ private:
 	uint8_t _channel = 0;
 	float _duty_cycle = 0;
 };
+
+}

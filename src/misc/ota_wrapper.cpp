@@ -10,9 +10,11 @@
 
 #include <atomic>
 
-namespace OtaWrapper {
+namespace Wrapper {
 
-static const char *TAG = "ota_wrapper";
+namespace OTA {
+
+static const char *TAG = "Wrapper::OTA";
 
 static esp_https_ota_handle_t _https_ota_handle = nullptr;
 static std::atomic<Status> _status = Status::IDLE;
@@ -135,4 +137,6 @@ void abort() {
     esp_https_ota_abort(_https_ota_handle);
 }
 
-}
+} // namespace OTA
+
+} // namespace Wrapper

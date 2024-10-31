@@ -8,14 +8,17 @@
  * @brief 套接字驱动，包含TCP、UDP下的服务器与客户端模式，固定堵塞接收、发送
  * 
  */
-namespace SocketWrapper {
 
-enum class Protocol : uint8_t {
+namespace Wrapper {
+
+namespace Socket {
+
+enum Protocol : uint8_t {
 	TCP,
 	UDP
 };
 
-int socketSend(int sock, const void* data, int len);
+int Send(int sock, const void* data, int len);
 
 class Socket {
 public:
@@ -77,4 +80,6 @@ private:
 	Socket _socket;
 };
 
-}
+} // namseapce Socket
+
+} // namseapce Wrapper

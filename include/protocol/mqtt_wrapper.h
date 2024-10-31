@@ -3,7 +3,9 @@
 #include "bufdef.h"
 #include <string_view>
 
-namespace MqttWrapper {
+namespace Wrapper {
+
+namespace MQTT {
 
 enum Version : uint8_t {
     UNDEFINED = 0,
@@ -58,4 +60,6 @@ bool waitStatus(Status status, int time_ms);
  */
 void subscribeRecoveryHandle();
 
-}
+} // namespace MQTT
+
+} // namespace Wrapper

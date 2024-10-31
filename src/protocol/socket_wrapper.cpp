@@ -6,9 +6,12 @@
 #include <arpa/inet.h>    // for inet_addr
 #include <unistd.h>       // for close
 
-namespace SocketWrapper {
+namespace Wrapper {
 
-constexpr static const char* TAG = "socket_wrapper" ;
+namespace Socket {
+
+
+constexpr static const char* TAG = "Wrapper::Socket" ;
 
 Socket::Socket(Protocol proto) {
 	_protocol = proto;
@@ -204,7 +207,7 @@ void Client::shutdown() {
 }
 
 
-int socketSend(int sock, const void* data, int len) {
+int Send(int sock, const void* data, int len) {
     int to_write = len;
     while (to_write > 0) {
 		int written = ::send(sock, (uint8_t *)data + (len - to_write), to_write, 0);
@@ -216,4 +219,6 @@ int socketSend(int sock, const void* data, int len) {
     return len;
 }
 
-} /* namespace SocketWrapper */
+} /* namespace Socket */
+
+} /* namespace Wrapper */

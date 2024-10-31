@@ -4,6 +4,7 @@
 #include <cstring>
 #include <driver/uart.h>
 
+namespace Wrapper {
 
 UART::UART(int uart_num, int tx_io_num, int rx_io_num, int baud_rate, uint8_t parity):
 _uart_num(uart_num) {
@@ -49,3 +50,5 @@ int UART::read(uint8_t buf[], uint32_t size, int timeout) {
 int UART::flush() {
 	return uart_flush((uart_port_t)_uart_num);
 }
+
+} // namespace Wrapper
