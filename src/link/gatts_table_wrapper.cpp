@@ -64,6 +64,8 @@ static esp_ble_adv_data_t _scan_rsp_data = {
     .set_scan_rsp = true,
     .include_name = true,
     .include_txpower = true,
+    .min_interval = 0,
+    .max_interval = 0,
     .appearance = 0x00,
     .manufacturer_len = 0,
     .p_manufacturer_data =  NULL,
@@ -76,12 +78,14 @@ static esp_ble_adv_data_t _scan_rsp_data = {
 
 /* advertising params */
 static esp_ble_adv_params_t _adv_params = {
-    .adv_int_min         = 0x20,
-    .adv_int_max         = 0x40,
-    .adv_type            = ADV_TYPE_IND,
-    .own_addr_type       = BLE_ADDR_TYPE_PUBLIC,
-    .channel_map         = ADV_CHNL_ALL,
-    .adv_filter_policy   = ADV_FILTER_ALLOW_SCAN_ANY_CON_ANY,
+    .adv_int_min        = 0x20,
+    .adv_int_max        = 0x40,
+    .adv_type           = ADV_TYPE_IND,
+    .own_addr_type      = BLE_ADDR_TYPE_PUBLIC,
+    .peer_addr          = 0,
+    .peer_addr_type     = BLE_ADDR_TYPE_PUBLIC,
+    .channel_map        = ADV_CHNL_ALL,
+    .adv_filter_policy  = ADV_FILTER_ALLOW_SCAN_ANY_CON_ANY,
 };
 
 /*
@@ -251,7 +255,8 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
     case ESP_GATTS_STOP_EVT:
         break;
     case ESP_GATTS_CONNECT_EVT: {
-        esp_ble_conn_update_params_t conn_params = {0};
+        esp_ble_conn_update_params_t conn_params;
+        memset(&conn_params, 0, sizeof(conn_params));
         memcpy(conn_params.bda, param->connect.remote_bda, sizeof(esp_bd_addr_t));
         /* For the iOS system, please refer to Apple official documents about the BLE connection parameters restrictions. */
         conn_params.latency = 0;

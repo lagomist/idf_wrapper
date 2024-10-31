@@ -100,6 +100,8 @@ static esp_ble_adv_data_t _scan_rsp_data = {
     .set_scan_rsp = true,
     .include_name = true,
     .include_txpower = true,
+    .min_interval = 0,
+    .max_interval = 0,
     .appearance = 0x00,
     .manufacturer_len = 0,
     .p_manufacturer_data =  nullptr,
@@ -115,6 +117,8 @@ static esp_ble_adv_params_t _adv_params = {
     .adv_int_max        = 0x40,
     .adv_type           = ADV_TYPE_IND,
     .own_addr_type      = BLE_ADDR_TYPE_PUBLIC,
+    .peer_addr          = 0,
+    .peer_addr_type     = BLE_ADDR_TYPE_PUBLIC,
     .channel_map        = ADV_CHNL_ALL,
     .adv_filter_policy  = ADV_FILTER_ALLOW_SCAN_ANY_CON_ANY,
 };
@@ -354,7 +358,7 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
     case ESP_GATTS_READ_EVT: {
         uint16_t length = 0;
         const uint8_t *prf_char;
-        esp_gatt_rsp_t rsp = {0};
+        esp_gatt_rsp_t rsp;
         esp_ble_gatts_get_attr_value(param->read.handle,  &length, &prf_char);
         rsp.attr_value.handle = param->read.handle;
         rsp.attr_value.len = length;
@@ -379,7 +383,7 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
                 } else if (char_inst->handle == param->write.handle) {
                     // 接收数据送入回调函数
                     if (profile_inst->recv_cb != nullptr) {
-                        RecvEvtParam info = {0};
+                        RecvEvtParam info;
                         info.gatts_if = gatts_if;
                         info.conn_id = param->write.conn_id;
                         info.data = param->write.value;
@@ -444,7 +448,8 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
         break;
     case ESP_GATTS_CONNECT_EVT: {
         if (profile_inst->app_id == _profile_inst_app) {
-            esp_ble_conn_update_params_t conn_params = {0};
+            esp_ble_conn_update_params_t conn_params;
+            memset(&conn_params, 0, sizeof(conn_params));
             memcpy(conn_params.bda, param->connect.remote_bda, sizeof(esp_bd_addr_t));
             /* For the IOS system, please reference the apple official documents about the ble connection parameters restrictions. */
             conn_params.latency = 0;
