@@ -164,9 +164,9 @@ constexpr static OBuf format(const T& val) {
   
 } // namespace Utility 
 
-
-constexpr uint32_t operator "" _hash(const char* str, size_t n) {
-	return Utility::BKDR_hash(str);
 }
 
+// out of namespace
+constexpr uint32_t operator "" _hash(const char* str, size_t n) {
+	return Wrapper::Utility::BKDR_hash(str);
 }

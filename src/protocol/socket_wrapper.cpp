@@ -207,7 +207,7 @@ void Client::shutdown() {
 }
 
 
-int Send(int sock, const void* data, int len) {
+int send(int sock, const void* data, int len) {
     int to_write = len;
     while (to_write > 0) {
 		int written = ::send(sock, (uint8_t *)data + (len - to_write), to_write, 0);

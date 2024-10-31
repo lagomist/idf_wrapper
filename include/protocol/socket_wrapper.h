@@ -18,7 +18,7 @@ enum Protocol : uint8_t {
 	UDP
 };
 
-int Send(int sock, const void* data, int len);
+int send(int sock, const void* data, int len);
 
 class Socket {
 public:
