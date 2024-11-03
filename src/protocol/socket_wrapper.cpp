@@ -50,6 +50,25 @@ int Socket::recv(void *rx_buf, int buf_len) {
 	return len;
 }
 
+int Socket::recv(void *rx_buf, int buf_len, int timeval_ms) {
+	int fp0 = 0;
+	int maxfd = (_sockfd > fp0) ? (_sockfd + 1) : (fp0 + 1);
+	struct timeval timeout = {
+		.tv_sec = timeval_ms / 1000,
+		.tv_usec = (timeval_ms % 1000 ) * 1000,
+	};
+	fd_set readset;
+	FD_ZERO(&readset);
+	FD_SET(_sockfd, &readset);
+	if (select(maxfd, &readset, NULL, NULL, (timeval_ms < 0) ? NULL : &timeout) < 0) {
+		return -2;
+	}
+	if (FD_ISSET(_sockfd, &readset)) {
+		return ::recv(_sockfd, rx_buf, buf_len, MSG_DONTWAIT);
+	}
+	return 0;
+}
+
 int Socket::recvfrom(OBuf rx_buf, std::string& ip, uint16_t& port) {
 	if (this->_sockfd < 0) return this->_sockfd;
 	struct sockaddr_in source_addr; 

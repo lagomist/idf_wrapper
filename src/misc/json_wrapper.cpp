@@ -64,7 +64,7 @@ bool JsonObject::isNull() const {
     return cJSON_IsNull(_root);
 }
 
-void JsonObject::setArray() {
+void JsonObject::setToArray() {
     clear();
     _root = cJSON_CreateArray();
 }
@@ -110,12 +110,22 @@ bool JsonObject::getBool(const std::string& key) const {
     return cJSON_IsTrue(item);
 }
 
-void JsonObject::addObject(const std::string& key, JsonObject& obj) {
+void JsonObject::addToObject(const std::string& key, JsonObject& obj) {
     cJSON_AddItemToObject(_root, key.c_str(), obj._root);
 }
 
-void JsonObject::addArray(JsonObject& arr) {
-    cJSON_AddItemToArray(_root, arr._root);
+void JsonObject::addToArray(JsonObject& item) {
+    cJSON_AddItemToArray(_root, item._root);
+}
+
+void JsonObject::addToArray(const std::string& value) {
+    cJSON* item = cJSON_CreateString(value.data());
+    cJSON_AddItemToArray(_root, item);
+}
+
+void JsonObject::addToArray(int value) {
+    cJSON* item = cJSON_CreateNumber(value);
+    cJSON_AddItemToArray(_root, item);
 }
 
 void JsonObject::add(const std::string& key, const std::string& value) {

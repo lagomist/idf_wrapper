@@ -29,6 +29,7 @@ public:
 	~Socket();
 	
 	int recv(void *rx_buf, int buf_len);
+	int recv(void *rx_buf, int buf_len, int timeval_ms);
 	int send(const void *tx_buf, int buf_len);
 	int recvfrom(OBuf rx_buf, std::string& ip, uint16_t& port);
 	int sendto(std::string_view ip, uint16_t port, IBuf data);

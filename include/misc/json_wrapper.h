@@ -28,7 +28,7 @@ public:
     bool isNull() const;
 
     // Setting the object
-    void setArray();
+    void setToArray();
 
     // Getters for object
     JsonObject getObject(const std::string& key) const;
@@ -39,8 +39,10 @@ public:
     int getArraySize() const;
     std::string getString() const;
 
-    void addObject(const std::string& key, JsonObject& obj);
-    void addArray(JsonObject& arr);
+    void addToObject(const std::string& key, JsonObject& obj);
+    void addToArray(JsonObject& item);
+    void addToArray(const std::string& value);
+    void addToArray(int value);
     void add(const std::string& key, const std::string& value);
     void add(const std::string& key, int value);
     void add(const std::string& key, float value);
@@ -57,5 +59,6 @@ private:
     JsonObject(cJSON* json);
     void clear();
 };
+
 
 }

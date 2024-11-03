@@ -10,7 +10,7 @@ namespace FileSystem {
 /**
  * @brief 挂载文件系统 
  *
- * @note 挂载littlefs文件系统
+ * @note 挂载fatfs文件系统
  *
  * @param 
  * 

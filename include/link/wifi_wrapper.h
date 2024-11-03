@@ -23,7 +23,7 @@ constexpr const char* stateString(State state) {
 		case State::IDLE: return "idle";
 		case State::WAITTING: return "waitting";
 		case State::CONNECTED: return "connected";
-		case State::NO_AP_FOUND: return "no_ap_found";
+		case State::NO_AP_FOUND: return "unfound";
 		case State::ERROR: return "error";
 		default: return "unknown";
 	}
@@ -32,7 +32,8 @@ constexpr const char* stateString(State state) {
 void netif_init();
 State state();
 Mode get_mode();
-std::string get_ip();
+uint32_t get_ip();
+std::string get_ip_str();
 
 
 namespace Station {

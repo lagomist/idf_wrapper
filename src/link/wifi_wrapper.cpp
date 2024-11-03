@@ -168,11 +168,8 @@ static void wifi_deinit(esp_netif_t* netif) {
 	esp_netif_destroy_default_wifi(netif);
 }
 
-
-std::string get_ip() {
+uint32_t get_ip() {
 	esp_netif_ip_info_t ip_info{};
-    std::string ip_str = {};
-    ip_str.resize(16);
     switch (_wifi_mode) {
     case WIFI_MODE_AP:
         esp_netif_get_ip_info(_ap_netif, &ip_info);
@@ -181,10 +178,16 @@ std::string get_ip() {
     case WIFI_MODE_APSTA:
         esp_netif_get_ip_info(_sta_netif, &ip_info);
         break;
-    default:
-        break;
+    default: break;
     }
-    inet_ntoa_r(ip_info.ip.addr, ip_str.data(), ip_str.size());
+	return ip_info.ip.addr;
+}
+
+std::string get_ip_str() {
+    std::string ip_str = {};
+    ip_str.resize(16);
+    uint32_t ip_addr = get_ip();
+    inet_ntoa_r(ip_addr, ip_str.data(), ip_str.size());
 	return ip_str;
 }
 
