@@ -3,6 +3,9 @@
 
 #include "sdkconfig.h"
 #if CONFIG_BT_ENABLED
+#ifndef CONFIG_BT_BLE_42_FEATURES_SUPPORTED
+#error "wrapper driver only support BLE 4.2"
+#endif
 
 #include "esp_gap_ble_api.h"
 #include "esp_bt_main.h"
@@ -53,7 +56,7 @@ constexpr static const char *TAG = "Wrapper::BLE::Server";
 /* 服务实例配置文件链表头 */
 static gatts_profile_inst*  _profile_inst_head = nullptr;
 static int32_t              _profile_inst_app = -1;
-static std::atomic_uint16_t _mtu_size = 27;
+static std::atomic_uint16_t _mtu_size = 23;
 static uint8_t              _default_char_value[1] = {0x00};
 static uint8_t              _default_char_ccc[2] = {0x00,0x00};
 
@@ -225,24 +228,16 @@ static void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param
         if (param->adv_start_cmpl.status != ESP_BT_STATUS_SUCCESS) {
             ESP_LOGE(TAG, "Advertising start failed");
         } else {
-            ESP_LOGI(TAG, "BLE Advertising start.");
+            ESP_LOGI(TAG, "Advertising start.");
         }
         break;
     case ESP_GAP_BLE_ADV_STOP_COMPLETE_EVT:
         if (param->adv_stop_cmpl.status != ESP_BT_STATUS_SUCCESS) {
-            ESP_LOGE(TAG, "Advertising stop failed\n");
-        } else {
-            ESP_LOGI(TAG, "Stop adv successfully\n");
+            ESP_LOGE(TAG, "Advertising stop failed");
         }
         break;
     case ESP_GAP_BLE_UPDATE_CONN_PARAMS_EVT:
-         ESP_LOGI(TAG, "update connection params status = %d, min_int = %d, max_int = %d,conn_int = %d,latency = %d, timeout = %d",
-                  param->update_conn_params.status,
-                  param->update_conn_params.min_int,
-                  param->update_conn_params.max_int,
-                  param->update_conn_params.conn_int,
-                  param->update_conn_params.latency,
-                  param->update_conn_params.timeout);
+        ESP_LOGI(TAG, "Connection params updating.");
         break;
     default:
         break;
@@ -442,7 +437,7 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
     case ESP_GATTS_DELETE_EVT:
         break;
     case ESP_GATTS_START_EVT:
-        ESP_LOGI(TAG, "GATTS service started, service_handle: %d", param->start.service_handle);
+        ESP_LOGI(TAG, "GATTS service started.");
         break;
     case ESP_GATTS_STOP_EVT:
         break;
@@ -459,6 +454,7 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
             // start sent the update connection parameters to the peer device.
             esp_ble_gap_update_conn_params(&conn_params);
             _is_connected = true;
+            ESP_LOGI(TAG, "Connected.");
             if (_connect_cb)
 				_connect_cb();
         }
@@ -468,7 +464,7 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
     case ESP_GATTS_DISCONNECT_EVT:
         if (profile_inst->app_id == _profile_inst_app) {
             _is_connected = false;
-            ESP_LOGW(TAG, "disconnected, reason 0x%x", param->disconnect.reason);
+            ESP_LOGW(TAG, "Disconnected, reason 0x%x", param->disconnect.reason);
             if (_disconnect_cb)
 				_disconnect_cb();
             esp_ble_gap_start_advertising(&_adv_params);

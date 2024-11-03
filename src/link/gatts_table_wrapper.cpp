@@ -3,9 +3,10 @@
 
 #include "sdkconfig.h"
 #if CONFIG_BT_ENABLED
+#ifndef CONFIG_BT_BLE_42_FEATURES_SUPPORTED
+#error "wrapper driver only support BLE 4.2"
+#endif
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
 #include "esp_gap_ble_api.h"
 #include "esp_bt_main.h"
 #include "esp_bt.h"
@@ -14,6 +15,8 @@
 #include "esp_log.h"
 #include <string.h>
 #include <atomic>
+
+
 
 namespace Wrapper {
 
@@ -24,7 +27,7 @@ namespace DefaultServer {
 constexpr static const char TAG[] = "Wrapper::BLE::DefaultServer";
 
 
-static std::atomic_uint16_t _mtu_size = 27;
+static std::atomic_uint16_t _mtu_size = 23;
 static std::atomic_bool		_is_connected = false;
 static std::atomic_uint16_t _conn_id = 0xffff;
 static std::atomic<esp_gatt_if_t> _gatts_if = 0xff;
@@ -143,9 +146,9 @@ static void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param
     case ESP_GAP_BLE_ADV_START_COMPLETE_EVT:
         /* advertising start complete event to indicate advertising start successfully or failed */
         if (param->adv_start_cmpl.status != ESP_BT_STATUS_SUCCESS) {
-            ESP_LOGE(TAG, "advertising start failed");
+            ESP_LOGE(TAG, "Advertising start failed");
         } else {
-            ESP_LOGI(TAG, "advertising start.");
+            ESP_LOGI(TAG, "Advertising start.");
         }
         break;
     case ESP_GAP_BLE_ADV_STOP_COMPLETE_EVT:
@@ -154,13 +157,7 @@ static void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param
         }
         break;
     case ESP_GAP_BLE_UPDATE_CONN_PARAMS_EVT:
-        ESP_LOGI(TAG, "update connection params status = %d, min_int = %d, max_int = %d,conn_int = %d,latency = %d, timeout = %d",
-                  param->update_conn_params.status,
-                  param->update_conn_params.min_int,
-                  param->update_conn_params.max_int,
-                  param->update_conn_params.conn_int,
-                  param->update_conn_params.latency,
-                  param->update_conn_params.timeout);
+        ESP_LOGI(TAG, "Connection params updating.");
         break;
     default:
         break;
@@ -268,6 +265,7 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
         _is_connected = true;
         _conn_id = param->connect.conn_id;
         _gatts_if = gatts_if;
+        ESP_LOGI(TAG, "Connected.");
         if (_connect_cb)
             _connect_cb();
     }

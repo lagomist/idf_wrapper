@@ -3,9 +3,10 @@
 
 #include "sdkconfig.h"
 #if CONFIG_BT_ENABLED
+#ifndef CONFIG_BT_BLE_42_FEATURES_SUPPORTED
+#error "wrapper driver only support BLE 4.2"
+#endif
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/event_groups.h"
 #include "esp_bt.h"
 #include "esp_bt_main.h"
 #include "esp_gap_ble_api.h"
@@ -25,7 +26,7 @@ namespace Client{
 constexpr static const char *TAG = "Wrapper::BLE::Client";
 
 
-static std::atomic_uint16_t _mtu_size = 27;
+static std::atomic_uint16_t _mtu_size = 23;
 static std::string _remote_device_name;
 static ConnCallback _connect_cb = nullptr;
 static ConnCallback _disconnect_cb = nullptr;
@@ -149,10 +150,10 @@ static void esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *par
 
     case ESP_GAP_BLE_SCAN_STOP_COMPLETE_EVT:
         if (param->scan_stop_cmpl.status != ESP_BT_STATUS_SUCCESS){
-            ESP_LOGE(TAG, "scan stop failed, error status = %x", param->scan_stop_cmpl.status);
+            ESP_LOGE(TAG, "Scan stop failed, error status = %x", param->scan_stop_cmpl.status);
             break;
         }
-        ESP_LOGI(TAG, "scan stop.");
+        ESP_LOGI(TAG, "Scan stop.");
         break;
 
     case ESP_GAP_BLE_ADV_STOP_COMPLETE_EVT:
@@ -162,13 +163,7 @@ static void esp_gap_cb(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *par
         }
         break;
     case ESP_GAP_BLE_UPDATE_CONN_PARAMS_EVT:
-        // ESP_LOGI(TAG, "update connection params status = %d, min_int = %d, max_int = %d,conn_int = %d,latency = %d, timeout = %d",
-        //         param->update_conn_params.status,
-        //         param->update_conn_params.min_int,
-        //         param->update_conn_params.max_int,
-        //         param->update_conn_params.conn_int,
-        //         param->update_conn_params.latency,
-        //         param->update_conn_params.timeout);
+        ESP_LOGI(TAG, "Connection params updating.");
         break;
     default:
         break;
@@ -224,7 +219,7 @@ static void esp_gattc_cb(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if, esp
         break;
     case ESP_GATTC_SEARCH_RES_EVT: {
         if (p_data->search_res.srvc_id.uuid.len == ESP_UUID_LEN_16 && p_data->search_res.srvc_id.uuid.uuid.uuid16 == _gl_profile_tab.service_uuid.uuid.uuid16) {
-            ESP_LOGI(TAG, "found service.");
+            ESP_LOGI(TAG, "found target service.");
             _get_service = true;
             _gl_profile_tab.service_start_handle = p_data->search_res.start_handle;
             _gl_profile_tab.service_end_handle = p_data->search_res.end_handle;
