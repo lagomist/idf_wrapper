@@ -42,4 +42,5 @@ list (APPEND src_list
     ${COMPONENT_DIR}/src/utility/utility_wrapper.cpp
     ${COMPONENT_DIR}/src/utility/shell_wrapper.cpp
     ${COMPONENT_DIR}/src/utility/time_wrapper.cpp
+    ${COMPONENT_DIR}/src/utility/os_wrapper.cpp
 )
