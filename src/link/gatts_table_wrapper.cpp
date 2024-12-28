@@ -26,7 +26,7 @@ namespace DefaultServer {
 
 constexpr static const char TAG[] = "Wrapper::BLE::DefaultServer";
 
-
+static std::string			_device_name;
 static std::atomic_uint16_t _mtu_size = 23;
 static std::atomic_bool		_is_connected = false;
 static std::atomic_uint16_t _conn_id = 0xffff;
@@ -171,14 +171,17 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
             // 保存服务端口
             _gatts_if = gatts_if;
         } else {
-            ESP_LOGE(TAG, "reg app failed, app_id %04x, status %d",
-                    param->reg.app_id,
-                    param->reg.status);
+            ESP_LOGE(TAG, "reg app failed, status %d", param->reg.status);
             return;
         }
 
+        // set device name
+        esp_err_t ret = esp_ble_gap_set_device_name(_device_name.data());
+        if (ret){
+            ESP_LOGE(TAG, "set device name failed, error code = %x", ret);
+        }
         // config adv data
-        esp_err_t ret = esp_ble_gap_config_adv_data(&_adv_data);
+        ret = esp_ble_gap_config_adv_data(&_adv_data);
         if (ret){
             ESP_LOGE(TAG, "config adv data failed, error code = %x", ret);
         }
@@ -358,6 +361,8 @@ int send(IBuf data) {
 
 void init(std::string_view host_name) {
     esp_err_t ret;
+
+    _device_name = host_name;
     ESP_ERROR_CHECK(esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT));
 
     esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
@@ -406,10 +411,6 @@ void init(std::string_view host_name) {
     ret = esp_ble_gatt_set_local_mtu(WrapperConfig::DEFAULT_MTU_SIZE);
     if (ret){
         ESP_LOGE(TAG, "set local  MTU failed, error code = %x", ret);
-    }
-    ret = esp_ble_gap_set_device_name(host_name.data());
-    if (ret){
-        ESP_LOGE(TAG, "set device name failed, error code = %x", ret);
     }
 }
 

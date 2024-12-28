@@ -94,12 +94,6 @@ private:
 };
 
 
-
-
-
-
-
-
 class MutexBase {
 public:
 	virtual int lock(uint32_t timeout_ms = -1) { return 0; }
@@ -220,8 +214,6 @@ private:
 	Callback _cb;
 	static void timer_cb_adapter(void* timer_handle);
 };
-
-
 
 
 } // namespace OS
