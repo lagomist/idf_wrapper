@@ -9,7 +9,7 @@
 
 namespace Wrapper {
 
-namespace Utility {
+namespace Utils {
 
 template <typename T = uint16_t, T POLY = 0x8005, T INIT = 0x0000, T XOROUT = 0x0000, bool REFIN = true, bool REFOUT = true>
 class CRC {
@@ -129,14 +129,14 @@ constexpr static OBuf format(const T& val);
 
 template <typename T, size_t ... seq>
 constexpr static OBuf format(const T& val, std::index_sequence<seq ...>) {
-	OBuf fmt = ((format(*(val.begin() + seq)) + Utility::snprint(",")) + ...);
+	OBuf fmt = ((format(*(val.begin() + seq)) + Utils::snprint(",")) + ...);
 	fmt.pop_back();
 	return fmt;
 }
 
 template <typename T, size_t ... seq>
 constexpr static OBuf format_tuple(const T& val, std::index_sequence<seq ...>) {
-	OBuf fmt = ((std::get<seq>(val) + Utility::snprint(",")) + ...);
+	OBuf fmt = ((std::get<seq>(val) + Utils::snprint(",")) + ...);
 	fmt.pop_back();
 	return fmt;
 }
@@ -144,15 +144,15 @@ constexpr static OBuf format_tuple(const T& val, std::index_sequence<seq ...>) {
 template <typename T>
 constexpr static OBuf format(const T& val) {
 	if constexpr (std::is_same_v<T, float>)
-		return Utility::snprint("%.3f", val);
+		return Utils::snprint("%.3f", val);
 	else if constexpr (std::is_same_v<T, int8_t> || std::is_same_v<T, int>)
-		return Utility::snprint("%d", val);
+		return Utils::snprint("%d", val);
 	else if constexpr (std::is_same_v<T, uint8_t>)
-		return Utility::snprint("%u", val);
+		return Utils::snprint("%u", val);
 	else if constexpr (std::is_same_v<T, int32_t>)
-		return Utility::snprint("%ld", val);
+		return Utils::snprint("%ld", val);
 	else if constexpr (std::is_same_v<T, uint32_t>)
-		return Utility::snprint("%lu", val);
+		return Utils::snprint("%lu", val);
 	else if constexpr (type_traits2::is_array<T>::value)
 		return format(val, std::make_index_sequence<type_traits2::is_array<T>::Nm> {});
 	else if constexpr (type_traits2::is_tuple<T>::value)
@@ -162,11 +162,11 @@ constexpr static OBuf format(const T& val) {
 	}
 }
   
-} // namespace Utility 
+} // namespace Utils 
 
 }
 
 // out of namespace
 constexpr uint32_t operator "" _hash(const char* str, size_t n) {
-	return Wrapper::Utility::BKDR_hash(str);
+	return Wrapper::Utils::BKDR_hash(str);
 }

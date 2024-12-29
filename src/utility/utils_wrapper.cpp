@@ -1,4 +1,4 @@
-#include "utility_wrapper.h"
+#include "utils_wrapper.h"
 #include <sha/sha_dma.h>
 #include <esp_random.h>
 #include <string.h>	//memcpy
@@ -8,7 +8,7 @@
 
 namespace Wrapper {
 
-namespace Utility {
+namespace Utils {
 
 static inline int chtonum(int ch) {
   return isdigit(ch) ? (ch - '0') : isalpha(ch) ? (toupper(ch) - 'A' + 10) : -1;
