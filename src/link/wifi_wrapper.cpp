@@ -35,7 +35,7 @@ constexpr static const char* NVS_KEY_WIFI_PSWD = "wifi_pswd";
 
 bool is_provisioned() {
     int len = Wrapper::NVS::getSize(NVS_KEY_WIFI_SSID);
-	return len > 0 ? true : false;
+	return len > 0;
 }
 
 std::string read_ssid() {
@@ -246,13 +246,11 @@ State provision(std::string_view ssid, std::string_view pswd, uint32_t timeout_m
         vTaskDelay(pdMS_TO_TICKS(timeout_ms / 10));
 	}
 	switch (state()) {
-    // 在超时时间内连上, 就写入nvs
     case State::CONNECTED:
         WiFi::Store::write(ssid, pswd);
         break;
-    // 否则回滚到之前的配置
     default:
-        // 之前有配过网就沿用, 否则不再重试连接
+        // 否则回滚到之前的配置
         if (WiFi::Store::is_provisioned())
             wifi_sta_config(WiFi::Store::read_ssid(), WiFi::Store::read_pswd());
         else

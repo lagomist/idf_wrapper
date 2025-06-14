@@ -1,7 +1,6 @@
 #pragma once
 
 #include "bufdef.h"
-#include <functional>
 #include <optional>
 #include <stdint.h>
 #include <string>
@@ -195,8 +194,7 @@ private:
 // 为计算timer运行时间，进入、退出timer时会调用如下weak函数，可覆盖。
 class Timer {
 public:
-	// using Callback = std::function<void(Timer&)>;
-	using Callback = void(*)(Timer&);
+	using Callback = void(*)();
 	Timer(Callback cb, uint32_t period_ms, bool auto_reload = true, const char name[] = nullptr, void* arg = nullptr);
 	~Timer();
 	void start();

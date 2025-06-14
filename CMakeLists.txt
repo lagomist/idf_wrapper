@@ -16,8 +16,4 @@ idf_component_register(
     ${dependencies}
 )
 
-# set_target_properties(${COMPONENT_LIB} PROPERTIES
-#     CXX_STANDARD 20
-#     CXX_STANDARD_REQUIRED ON
-#     CXX_EXTENSIONS ON
-# )
+add_definitions(-Wno-missing-field-initializers)

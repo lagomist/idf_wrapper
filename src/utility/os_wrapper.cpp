@@ -5,7 +5,6 @@
 #include "freertos/queue.h"
 #include "freertos/semphr.h"
 #include "freertos/event_groups.h"
-// #include <esp_private/freertos_idf_additions_priv.h>
 #include <esp_log.h>
 #include <assert.h>
 #include <stdio.h>
@@ -35,7 +34,7 @@ namespace OS {
 constexpr static const char TAG[] = "Wrapper::OS";
 
 static uint32_t ms2ticks(uint32_t ms) {
-	return ms/(1000/configTICK_RATE_HZ);
+	return pdMS_TO_TICKS(ms);
 }
 
 // freertos definition: 1-Good, 0-Bad
@@ -53,7 +52,10 @@ void start() {
 }
 
 void delay(uint32_t ms) {
-	vTaskDelay(ms2ticks(ms));
+	if (ms2ticks(ms) > 1)
+		vTaskDelay(ms2ticks(ms));
+	else
+		esp_rom_delay_us(ms * 1000);
 }
 
 void yield() {
@@ -392,7 +394,7 @@ const char* Timer::get_name() {
 
 void Timer::timer_cb_adapter(void* _handle) {
 	Timer* pthis = reinterpret_cast<Timer*>(pvTimerGetTimerID(_hd));
-	pthis->_cb(*pthis);
+	pthis->_cb();
 }
 
 #undef _hd
