@@ -46,39 +46,25 @@ private:
 	Protocol _protocol;
 };
 
-class Server {
+class Server : public Socket {
 public:
-	Server(Protocol proto) : _socket(proto) {}
+	Server(Protocol proto) : Socket(proto) {}
 	~Server() {}
 	int init(uint16_t port);
 	int accept();
 	void stop();
-	int fd() {
-		return _socket.fd();
-	}
-	Socket socket() {
-		return _socket;
-	}
 private:
-	Socket _socket;
 };
 
 
-class Client {
+class Client : public Socket {
 public:
-	Client(Protocol proto) : _socket(proto) {}
+	Client(Protocol proto) : Socket(proto) {}
 	~Client() {}
 	int init(uint16_t port);
 	int connect(std::string_view ip, uint16_t port);
 	void shutdown();
-	int fd() {
-		return _socket.fd();
-	}
-	Socket socket() {
-		return _socket;
-	}
 private:
-	Socket _socket;
 };
 
 } // namseapce Socket

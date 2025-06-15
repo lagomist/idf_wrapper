@@ -1,9 +1,8 @@
 #pragma once
 
-#include <string>
-// #include <unordered_map>
-// #include <vector>
 #include <cJSON.h>
+#include <string>
+#include <string_view>
 
 namespace Wrapper {
 
@@ -20,6 +19,7 @@ public:
     std::string serialize() const;
 
     // Accessors
+    bool isValid() const;
     bool isObject() const;
     bool isArray() const;
     bool isString() const;
@@ -29,6 +29,10 @@ public:
 
     // Setting the object
     void setToArray();
+
+    bool contains(std::string_view key) const {
+		return cJSON_HasObjectItem(_root, key.data());
+	}
 
     // Getters for object
     JsonObject getObject(const std::string& key) const;
@@ -48,15 +52,103 @@ public:
     void add(const std::string& key, float value);
 
     // Utility functions
-    JsonObject& operator[](const std::string& key);
-    JsonObject& operator[](int index);
+    explicit operator std::string() const {
+        if (!isString()) {
+            return {};
+        }
+        return std::string(_root->valuestring);
+    }
+
+    explicit operator char *() const {
+        if (!isString()) {
+            return {};
+        }
+        return _root->valuestring;
+    }
+
+    explicit operator uint8_t() const {
+        if (!isNumber()) {
+            return {};
+        }
+        return (uint8_t )_root->valuedouble;
+    }
+
+    explicit operator uint32_t() const {
+        if (!isNumber()) {
+            return {};
+        }
+        return (uint32_t )_root->valuedouble;
+    }
+
+    explicit operator float() const {
+        if (!isNumber()) {
+            return {};
+        }
+        return (float )_root->valuedouble;
+    }
+
+    explicit operator bool() const {
+        if (!isBool()) {
+            return {};
+        }
+        return (bool )_root->valuedouble;
+    }
+
+    JsonObject operator[](std::string_view key);
+    JsonObject operator[](int index);
+
+    template <typename T>
+    JsonObject& operator=(const T &val) {
+        cJSON *mval = nullptr;
+        if constexpr (std::is_base_of_v<JsonObject, T>) {
+            mval = cJSON_Duplicate(val.get_handle(), true);
+        }
+        else if constexpr (std::is_same_v<T, std::string> || std::is_same_v<T, std::string_view>) {
+            mval = cJSON_CreateString(val.data());
+        }
+        else if constexpr (std::is_same_v<T, const char *> || std::is_array_v<T>) {
+            mval = cJSON_CreateString(val);
+        }
+        // floating-point will match signed, so match floating-point first.
+        else if constexpr (std::is_floating_point_v<T> || std::is_signed_v<T> || std::is_unsigned_v<T>) {
+            mval = cJSON_CreateNumber(val);
+        }
+        else if constexpr (std::is_same_v<T, bool>) {
+            mval = cJSON_CreateBool(val);
+        }
+        else if constexpr (std::is_enum_v<T>) {
+            mval = cJSON_CreateNumber((int )val);
+        }
+        else {
+            static_assert(!std::is_same_v<T, T>, "unsupported type");
+        }
+        cJSON_AddItemToObject(_root, _key.data(), mval);
+        return *this;
+    }
+
+    JsonObject& operator=(JsonObject&& other) noexcept {
+        if (this != &other) {
+			clear();
+            _root = other._root;
+            other._root = nullptr;
+        }
+        return *this;
+    }
+
+	JsonObject& operator=(const JsonObject& other) {
+        if (this != &other) {
+			clear();
+            _root = cJSON_Duplicate(other._root, true);
+        }
+        return *this;
+    }
 
 private:
     cJSON* _root;
-    JsonObject* _value = nullptr;
+    std::string _key = {};
     bool _is_child = false;
 
-    JsonObject(cJSON* json);
+    JsonObject(cJSON* json, std::string_view key = {});
     void clear();
 };
 

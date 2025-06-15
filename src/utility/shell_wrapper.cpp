@@ -7,7 +7,7 @@ namespace Wrapper {
 
 namespace Shell {
 
-static Callback _call_cb = nullptr;
+static Callback _call_cb = +[](int argc, char* argv[]) -> OBuf { return {}; };
 
 static void try_push(std::vector<std::string>& args, std::string& arg) {
 	if (arg.empty())
@@ -42,14 +42,14 @@ void registerCallback(Callback call) {
 
 OBuf response(IBuf rbuf) {
 	auto args = cmd_split({(char*)rbuf.data(), rbuf.size()});
-	if (args.empty())
+	if (args.empty()) {
 		return {};
+	}
 	char *argptr[args.size()];
-	for (size_t idx = 0; idx < args.size(); ++idx)
+	for (size_t idx = 0; idx < args.size(); ++idx) {
 		argptr[idx] = args[idx].data();
-	if (_call_cb != nullptr)
-		return _call_cb(args.size(), argptr);
-	return {};
+	}
+	return _call_cb(args.size(), argptr);
 }
 
 }

@@ -121,44 +121,44 @@ int Socket::sendto(std::string_view ip, uint16_t port, IBuf data) {
 /* ---------------- Server ---------------- */
 
 int Server::init(uint16_t port) {
-	if (this->_socket.protocol() == Protocol::TCP) {
+	if (this->protocol() == Protocol::TCP) {
 		int optval = 1;
 		/* 解除端口占用 */
-		if (setsockopt(this->_socket.fd(), SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) < 0) {
+		if (setsockopt(this->fd(), SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) < 0) {
 			ESP_LOGE(TAG, "Setting reuseaddr error.");
 			return -2;
 		}
 	} else {
 		// 设置socket为广播
 		int broadcast_enable = 1;
-		if (setsockopt(this->_socket.fd(), SOL_SOCKET, SO_BROADCAST, &broadcast_enable, sizeof(broadcast_enable)) < 0) {
+		if (setsockopt(this->fd(), SOL_SOCKET, SO_BROADCAST, &broadcast_enable, sizeof(broadcast_enable)) < 0) {
 			ESP_LOGE(TAG, "Setting broadcast error.");
 			return -2;
 		}
 	}
 
-	if (this->_socket.bind(port) < 0) {
+	if (this->bind(port) < 0) {
 		ESP_LOGE(TAG, "Server bind error.");
 		return -3;
 	}
 
-	if (this->_socket.protocol() == Protocol::TCP) {
-		if (::listen(this->_socket.fd(), 3) < 0) {
+	if (this->protocol() == Protocol::TCP) {
+		if (::listen(this->fd(), 3) < 0) {
 			ESP_LOGE(TAG, "Server listen error.");
 			return -4;
 		}
 	}
 
-	return this->_socket.fd();
+	return this->fd();
 }
 
 int Server::accept() {
-	if (this->_socket.protocol() != Protocol::TCP) {
+	if (this->protocol() != Protocol::TCP) {
 		return -1;
 	}
 	struct sockaddr_in client_addr;
 	socklen_t addrlen = sizeof(struct sockaddr);
-	int fd = ::accept(this->_socket.fd(), (struct sockaddr *)&client_addr, &addrlen);
+	int fd = ::accept(this->fd(), (struct sockaddr *)&client_addr, &addrlen);
 	if(fd < 0) {
 		return -2;
 	}
@@ -176,7 +176,7 @@ int Server::accept() {
 }
 
 void Server::stop() {
-	::shutdown(this->_socket.fd(), SHUT_RD);
+	::shutdown(this->fd(), SHUT_RD);
 }
 
 
@@ -185,29 +185,29 @@ void Server::stop() {
 /* ---------------- Client ---------------- */
 
 int Client::init(uint16_t port) {
-	if (this->_socket.bind(port) < 0) {
+	if (this->bind(port) < 0) {
 		ESP_LOGE(TAG, "Client socket bind error.");
 		return -1;
 	}
-	if (this->_socket.protocol() == Protocol::UDP) {
+	if (this->protocol() == Protocol::UDP) {
 		// 设置套接字选项以启用地址重用
 		int reuseEnable = 1;
-		setsockopt(this->_socket.fd(), SOL_SOCKET, SO_REUSEADDR, &reuseEnable, sizeof(reuseEnable));
+		setsockopt(this->fd(), SOL_SOCKET, SO_REUSEADDR, &reuseEnable, sizeof(reuseEnable));
 
 		// Enable broadcasting
 		int broadcast_enable = 1;
-		setsockopt(this->_socket.fd(), SOL_SOCKET, SO_BROADCAST, &broadcast_enable, sizeof(broadcast_enable));
+		setsockopt(this->fd(), SOL_SOCKET, SO_BROADCAST, &broadcast_enable, sizeof(broadcast_enable));
 	}
 
-	return this->_socket.fd();
+	return this->fd();
 }
 
 int Client::connect(std::string_view ip, uint16_t port) {
-	if (this->_socket.protocol() != Protocol::TCP){
+	if (this->protocol() != Protocol::TCP){
 		return -1;
 	}
 
-	int fd = this->_socket.fd();
+	int fd = this->fd();
 	struct sockaddr_in server_addr;
 	memset(&server_addr, 0, sizeof(sockaddr_in));
 	server_addr.sin_family = AF_INET;
@@ -222,7 +222,7 @@ int Client::connect(std::string_view ip, uint16_t port) {
 }
 
 void Client::shutdown() {
-	::shutdown(this->_socket.fd(), SHUT_RDWR);
+	::shutdown(this->fd(), SHUT_RDWR);
 }
 
 

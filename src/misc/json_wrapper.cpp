@@ -11,13 +11,21 @@ JsonObject::JsonObject(const std::string& jsonString) : _root(nullptr) {
     parse(jsonString);
 }
 
-JsonObject::JsonObject(cJSON* json) : _root(json) {
+JsonObject::JsonObject(cJSON* json, std::string_view key) : _root(json), _key(key) {
     // do not free json memory
     _is_child = true;
 }
 
 JsonObject::~JsonObject() {
     clear();
+}
+
+void JsonObject::clear() {
+    if (_root && !_is_child) {
+        cJSON_Delete(_root);
+        _root = nullptr;
+    }
+    _is_child = false;
 }
   
 bool JsonObject::parse(const std::string& jsonString) {
@@ -38,6 +46,10 @@ std::string JsonObject::serialize() const {
     std::string result(jsonString);
     cJSON_free(jsonString);
     return result;
+}
+
+bool JsonObject::isValid() const {
+    return _root != nullptr;
 }
   
 bool JsonObject::isObject() const {
@@ -140,36 +152,19 @@ void JsonObject::add(const std::string& key, float value) {
     cJSON_AddNumberToObject(_root, key.c_str(), value);
 }
 
-JsonObject& JsonObject::operator[](const std::string& key) {
-    if (_value) {
-        delete _value;
+JsonObject JsonObject::operator[](std::string_view key) {
+    cJSON *mval = cJSON_GetObjectItem(_root, key.data());
+    if (mval == nullptr) {
+        return JsonObject(_root, key);
     }
-    _value = new JsonObject(cJSON_GetObjectItem(_root, key.c_str()));
-    return *_value;
+    return JsonObject(mval, key);
 }
 
-JsonObject& JsonObject::operator[](int index) {
-    if (_value) {
-        delete _value;
-    }
+JsonObject JsonObject::operator[](int index) {
     if (!isArray()) {
-        _value = new JsonObject();
-    } else {
-        _value = new JsonObject(cJSON_GetArrayItem(_root, index));
+        return JsonObject();
     }
-    return *_value;
-}
-  
-void JsonObject::clear() {
-    if (_root && !_is_child) {
-        cJSON_Delete(_root);
-        _root = nullptr;
-    }
-    if (_value) {
-        delete _value;
-        _value = nullptr;
-    }
-    _is_child = false;
+    return JsonObject(cJSON_GetArrayItem(_root, index));
 }
 
 }
