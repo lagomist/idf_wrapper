@@ -7,7 +7,7 @@ constexpr static char TAG[] = "Wrapper::JsonObject";
 
 JsonObject::JsonObject() : _root(cJSON_CreateObject()) {}
   
-JsonObject::JsonObject(const std::string& jsonString) : _root(nullptr) {
+JsonObject::JsonObject(std::string_view jsonString) : _root(nullptr) {
     parse(jsonString);
 }
 
@@ -28,9 +28,9 @@ void JsonObject::clear() {
     _is_child = false;
 }
   
-bool JsonObject::parse(const std::string& jsonString) {
+bool JsonObject::parse(std::string_view jsonString) {
     clear();
-    _root = cJSON_Parse(jsonString.c_str());
+    _root = cJSON_Parse(jsonString.data());
     if (!_root) {
         const char* error_ptr = cJSON_GetErrorPtr();
         if (error_ptr != nullptr) {
@@ -81,21 +81,25 @@ void JsonObject::setToArray() {
     _root = cJSON_CreateArray();
 }
 
-int JsonObject::getArraySize(const std::string& key) const {
-    const cJSON* item = cJSON_GetObjectItem(_root, key.c_str());
+int JsonObject::getArraySize(std::string_view key) const {
+    const cJSON* item = cJSON_GetObjectItem(_root, key.data());
     return cJSON_GetArraySize(item);
 }
 
 int JsonObject::getArraySize() const {
     return cJSON_GetArraySize(_root);
 }
-  
-JsonObject JsonObject::getObject(const std::string& key) const {
-    return JsonObject(cJSON_GetObjectItem(_root, key.c_str()));
+
+bool JsonObject::contains(std::string_view key) const {
+    return cJSON_HasObjectItem(_root, key.data());
+}
+
+JsonObject JsonObject::getObject(std::string_view key) const {
+    return JsonObject(cJSON_GetObjectItem(_root, key.data()));
 }
   
-std::string JsonObject::getString(const std::string& key) const {
-    const cJSON* item = cJSON_GetObjectItem(_root, key.c_str());
+std::string JsonObject::getString(std::string_view key) const {
+    const cJSON* item = cJSON_GetObjectItem(_root, key.data());
     if (!cJSON_IsString(item)) {
         return {};
     }
@@ -109,28 +113,24 @@ std::string JsonObject::getString() const {
     return _root->valuestring;
 }
 
-float JsonObject::getNumber(const std::string& key) const{
-    const cJSON* item = cJSON_GetObjectItem(_root, key.c_str());
+float JsonObject::getNumber(std::string_view key) const{
+    const cJSON* item = cJSON_GetObjectItem(_root, key.data());
     if (!cJSON_IsNumber(item)) {
         return {};
     }
     return (float )item->valuedouble;
 }
 
-bool JsonObject::getBool(const std::string& key) const {
-    const cJSON* item = cJSON_GetObjectItem(_root, key.c_str());
+bool JsonObject::getBool(std::string_view key) const {
+    const cJSON* item = cJSON_GetObjectItem(_root, key.data());
     return cJSON_IsTrue(item);
-}
-
-void JsonObject::addToObject(const std::string& key, JsonObject& obj) {
-    cJSON_AddItemToObject(_root, key.c_str(), obj._root);
 }
 
 void JsonObject::addToArray(JsonObject& item) {
     cJSON_AddItemToArray(_root, item._root);
 }
 
-void JsonObject::addToArray(const std::string& value) {
+void JsonObject::addToArray(std::string_view value) {
     cJSON* item = cJSON_CreateString(value.data());
     cJSON_AddItemToArray(_root, item);
 }
@@ -140,16 +140,20 @@ void JsonObject::addToArray(int value) {
     cJSON_AddItemToArray(_root, item);
 }
 
-void JsonObject::add(const std::string& key, const std::string& value) {
-    cJSON_AddStringToObject(_root, key.c_str(), value.c_str());
+void JsonObject::add(std::string_view key, JsonObject& obj) {
+    cJSON_AddItemToObject(_root, key.data(), obj._root);
 }
 
-void JsonObject::add(const std::string& key, int value) {
-    cJSON_AddNumberToObject(_root, key.c_str(), value);
+void JsonObject::add(std::string_view key, std::string_view value) {
+    cJSON_AddStringToObject(_root, key.data(), value.data());
+}
+
+void JsonObject::add(std::string_view key, int value) {
+    cJSON_AddNumberToObject(_root, key.data(), value);
 } 
 
-void JsonObject::add(const std::string& key, float value) {
-    cJSON_AddNumberToObject(_root, key.c_str(), value);
+void JsonObject::add(std::string_view key, float value) {
+    cJSON_AddNumberToObject(_root, key.data(), value);
 }
 
 JsonObject JsonObject::operator[](std::string_view key) {
@@ -165,6 +169,23 @@ JsonObject JsonObject::operator[](int index) {
         return JsonObject();
     }
     return JsonObject(cJSON_GetArrayItem(_root, index));
+}
+
+JsonObject& JsonObject::operator=(JsonObject&& other) noexcept {
+    if (this != &other) {
+        clear();
+        _root = other._root;
+        other._root = nullptr;
+    }
+    return *this;
+}
+
+JsonObject& JsonObject::operator=(const JsonObject& other) {
+    if (this != &other) {
+        clear();
+        _root = cJSON_Duplicate(other._root, true);
+    }
+    return *this;
 }
 
 }

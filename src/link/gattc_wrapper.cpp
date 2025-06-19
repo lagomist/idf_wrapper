@@ -324,7 +324,7 @@ static void esp_gattc_cb(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if, esp
         esp_bd_addr_t bda;
         memcpy(bda, p_data->srvc_chg.remote_bda, sizeof(esp_bd_addr_t));
         ESP_LOGI(TAG, "ESP_GATTC_SRVC_CHG_EVT, bd_addr:");
-        esp_log_buffer_hex(TAG, bda, sizeof(esp_bd_addr_t));
+        ESP_LOG_BUFFER_HEX(TAG, bda, sizeof(esp_bd_addr_t));
         break;
     }
     case ESP_GATTC_WRITE_CHAR_EVT:

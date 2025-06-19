@@ -91,21 +91,6 @@ constexpr uint32_t BKDR_hash(std::string_view str) {
 }
 
 
-template <uint8_t N = 11>
-uint32_t get_median(std::function<uint32_t()> cb) {
-	std::array<uint32_t, N> val;
-	std::generate(val.begin(), val.end(), cb);
-	std::nth_element(val.begin(), val.begin() + N / 2, val.end());
-	return val[N / 2];
-}
-
-inline void trim(auto& value, auto min, auto max) {
-	if (value < min)
-		value = min;
-	else if (value > max)
-		value = max;
-}
-
 long strntol(const char nptr[], size_t size, char *endptr[], int base);
 double strntod(const char nptr[], size_t size, char *endptr[]);
 

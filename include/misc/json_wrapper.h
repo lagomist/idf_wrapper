@@ -9,11 +9,13 @@ namespace Wrapper {
 class JsonObject {
 public:
     JsonObject();
-    JsonObject(const std::string& jsonString);
+    JsonObject(std::string_view jsonString);
     ~JsonObject();
 
     // Parse JSON string into a dictionary
-    bool parse(const std::string& jsonString);
+    bool parse(std::string_view jsonString);
+
+    void clear();
 
     // Serialize dictionary into a JSON string
     std::string serialize() const;
@@ -30,26 +32,24 @@ public:
     // Setting the object
     void setToArray();
 
-    bool contains(std::string_view key) const {
-		return cJSON_HasObjectItem(_root, key.data());
-	}
+    bool contains(std::string_view key) const;
 
     // Getters for object
-    JsonObject getObject(const std::string& key) const;
-    std::string getString(const std::string& key) const;
-    float getNumber(const std::string& key) const;
-    bool getBool(const std::string& key) const;
-    int getArraySize(const std::string& key) const;
+    JsonObject getObject(std::string_view key) const;
+    std::string getString(std::string_view key) const;
+    float getNumber(std::string_view key) const;
+    bool getBool(std::string_view key) const;
+    int getArraySize(std::string_view key) const;
     int getArraySize() const;
     std::string getString() const;
 
-    void addToObject(const std::string& key, JsonObject& obj);
     void addToArray(JsonObject& item);
-    void addToArray(const std::string& value);
+    void addToArray(std::string_view value);
     void addToArray(int value);
-    void add(const std::string& key, const std::string& value);
-    void add(const std::string& key, int value);
-    void add(const std::string& key, float value);
+    void add(std::string_view key, JsonObject& obj);
+    void add(std::string_view key, std::string_view value);
+    void add(std::string_view key, int value);
+    void add(std::string_view key, float value);
 
     // Utility functions
     explicit operator std::string() const {
@@ -71,6 +71,13 @@ public:
             return {};
         }
         return (uint8_t )_root->valuedouble;
+    }
+
+    explicit operator int() const {
+        if (!isNumber()) {
+            return {};
+        }
+        return (int )_root->valuedouble;
     }
 
     explicit operator uint32_t() const {
@@ -100,6 +107,9 @@ public:
     template <typename T>
     JsonObject& operator=(const T &val) {
         cJSON *mval = nullptr;
+        if (_key.empty()) {
+            return *this;   
+        }
         if constexpr (std::is_base_of_v<JsonObject, T>) {
             mval = cJSON_Duplicate(val.get_handle(), true);
         }
@@ -122,26 +132,14 @@ public:
         else {
             static_assert(!std::is_same_v<T, T>, "unsupported type");
         }
+
         cJSON_AddItemToObject(_root, _key.data(), mval);
         return *this;
     }
 
-    JsonObject& operator=(JsonObject&& other) noexcept {
-        if (this != &other) {
-			clear();
-            _root = other._root;
-            other._root = nullptr;
-        }
-        return *this;
-    }
+    JsonObject& operator=(JsonObject&& other) noexcept;
 
-	JsonObject& operator=(const JsonObject& other) {
-        if (this != &other) {
-			clear();
-            _root = cJSON_Duplicate(other._root, true);
-        }
-        return *this;
-    }
+	JsonObject& operator=(const JsonObject& other);
 
 private:
     cJSON* _root;
@@ -149,7 +147,6 @@ private:
     bool _is_child = false;
 
     JsonObject(cJSON* json, std::string_view key = {});
-    void clear();
 };
 
 
