@@ -215,6 +215,7 @@ static void esp_gattc_cb(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if, esp
         if (param->cfg_mtu.status != ESP_GATT_OK){
             ESP_LOGE(TAG,"config mtu failed, error status = %x", param->cfg_mtu.status);
         }
+        _mtu_size = param->cfg_mtu.mtu;
         ESP_LOGI(TAG, "MTU configure: %d.", param->cfg_mtu.mtu);
         break;
     case ESP_GATTC_SEARCH_RES_EVT: {

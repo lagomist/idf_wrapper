@@ -3,102 +3,102 @@
 
 namespace Wrapper {
 
-constexpr static char TAG[] = "Wrapper::JsonObject";
-
-JsonObject::JsonObject() : _root(cJSON_CreateObject()) {}
-  
-JsonObject::JsonObject(std::string_view jsonString) : _root(nullptr) {
+JsonBase::JsonBase() : _root(cJSON_CreateObject()) {}
+JsonBase::JsonBase(cJSON *json) : _root(json), _is_child(true) {}
+JsonBase::JsonBase(std::string_view jsonString) : _root(nullptr) {
     parse(jsonString);
 }
 
-JsonObject::JsonObject(cJSON* json, std::string_view key) : _root(json), _key(key) {
-    // do not free json memory
-    _is_child = true;
-}
-
-JsonObject::~JsonObject() {
+JsonBase::~JsonBase() {
     clear();
 }
 
-void JsonObject::clear() {
+void JsonBase::clear() {
     if (_root && !_is_child) {
         cJSON_Delete(_root);
         _root = nullptr;
     }
-    _is_child = false;
 }
-  
-bool JsonObject::parse(std::string_view jsonString) {
+
+cJSON* JsonBase::get_handle() const {
+    return _root;
+}
+
+bool JsonBase::parse(std::string_view jsonString) {
     clear();
     _root = cJSON_Parse(jsonString.data());
     if (!_root) {
-        const char* error_ptr = cJSON_GetErrorPtr();
-        if (error_ptr != nullptr) {
-            ESP_LOGE(TAG, "Error before: %s" , error_ptr);
-        }
         return false;
     }
     return true;
 }
   
-std::string JsonObject::serialize() const {
+std::string JsonBase::serialize() const {
     char* jsonString = cJSON_PrintUnformatted(_root);
     std::string result(jsonString);
     cJSON_free(jsonString);
     return result;
 }
 
-bool JsonObject::isValid() const {
+bool JsonBase::isValid() const {
     return _root != nullptr;
 }
   
-bool JsonObject::isObject() const {
+bool JsonBase::isObject() const {
     return cJSON_IsObject(_root);
 }
-  
-bool JsonObject::isArray() const {
+
+bool JsonBase::isArray() const {
     return cJSON_IsArray(_root);
 }
-  
-bool JsonObject::isString() const {
+
+bool JsonBase::isString() const {
     return cJSON_IsString(_root);
 }
-  
-bool JsonObject::isNumber() const {
+
+bool JsonBase::isNumber() const {
     return cJSON_IsNumber(_root);
 }
 
-bool JsonObject::isBool() const {
+bool JsonBase::isBool() const {
     return cJSON_IsBool(_root);
 }
   
-bool JsonObject::isNull() const {
+bool JsonBase::isNull() const {
     return cJSON_IsNull(_root);
 }
 
-void JsonObject::setToArray() {
+bool JsonBase::empty() const {
+    if (_root) {
+        return _root->child == nullptr;
+    }
+    return true;
+}
+
+
+void JsonBase::setToArray() {
     clear();
     _root = cJSON_CreateArray();
 }
 
-int JsonObject::getArraySize(std::string_view key) const {
+int JsonBase::getArraySize(std::string_view key) const {
     const cJSON* item = cJSON_GetObjectItem(_root, key.data());
     return cJSON_GetArraySize(item);
 }
 
-int JsonObject::getArraySize() const {
+int JsonBase::getArraySize() const {
     return cJSON_GetArraySize(_root);
 }
 
-bool JsonObject::contains(std::string_view key) const {
+bool JsonBase::contains(std::string_view key) const {
     return cJSON_HasObjectItem(_root, key.data());
 }
-
-JsonObject JsonObject::getObject(std::string_view key) const {
-    return JsonObject(cJSON_GetObjectItem(_root, key.data()));
+  
+JsonBase JsonBase::getObject(std::string_view key) const {
+    return JsonBase(cJSON_GetObjectItem(_root, key.data()));
 }
   
-std::string JsonObject::getString(std::string_view key) const {
+std::string JsonBase::getString(std::string_view key) const {
     const cJSON* item = cJSON_GetObjectItem(_root, key.data());
     if (!cJSON_IsString(item)) {
         return {};
@@ -106,14 +106,28 @@ std::string JsonObject::getString(std::string_view key) const {
     return item->valuestring;
 }
 
-std::string JsonObject::getString() const {
-    if (!cJSON_IsString(_root)) {
+std::string JsonBase::getString() const {
+    if (!isString()) {
         return {};
     }
     return _root->valuestring;
 }
 
-float JsonObject::getNumber(std::string_view key) const{
+float JsonBase::getFloat() const {
+    if (!isNumber()) {
+        return {};
+    }
+    return (float )_root->valuedouble;
+}
+
+int JsonBase::getNumber() const {
+    if (!isNumber()) {
+        return {};
+    }
+    return (int )_root->valuedouble;
+}
+
+float JsonBase::getFloat(std::string_view key) const {
     const cJSON* item = cJSON_GetObjectItem(_root, key.data());
     if (!cJSON_IsNumber(item)) {
         return {};
@@ -121,54 +135,130 @@ float JsonObject::getNumber(std::string_view key) const{
     return (float )item->valuedouble;
 }
 
-bool JsonObject::getBool(std::string_view key) const {
+uint32_t JsonBase::getNumber(std::string_view key) const {
+    const cJSON* item = cJSON_GetObjectItem(_root, key.data());
+    if (!cJSON_IsNumber(item)) {
+        return {};
+    }
+    return (uint32_t )item->valuedouble;
+}
+
+bool JsonBase::getBool(std::string_view key) const {
     const cJSON* item = cJSON_GetObjectItem(_root, key.data());
     return cJSON_IsTrue(item);
 }
 
-void JsonObject::addToArray(JsonObject& item) {
+void JsonBase::addToArray(JsonBase& item) {
     cJSON_AddItemToArray(_root, item._root);
 }
 
-void JsonObject::addToArray(std::string_view value) {
+void JsonBase::addToArray(std::string_view value) {
     cJSON* item = cJSON_CreateString(value.data());
     cJSON_AddItemToArray(_root, item);
 }
 
-void JsonObject::addToArray(int value) {
+void JsonBase::addToArray(int value) {
     cJSON* item = cJSON_CreateNumber(value);
     cJSON_AddItemToArray(_root, item);
 }
 
-void JsonObject::add(std::string_view key, JsonObject& obj) {
+void JsonBase::add(std::string_view key, JsonBase& obj) {
     cJSON_AddItemToObject(_root, key.data(), obj._root);
 }
 
-void JsonObject::add(std::string_view key, std::string_view value) {
+void JsonBase::add(std::string_view key, std::string_view value) {
     cJSON_AddStringToObject(_root, key.data(), value.data());
 }
 
-void JsonObject::add(std::string_view key, int value) {
+void JsonBase::add(std::string_view key, int value) {
     cJSON_AddNumberToObject(_root, key.data(), value);
 } 
 
-void JsonObject::add(std::string_view key, float value) {
+void JsonBase::add(std::string_view key, float value) {
     cJSON_AddNumberToObject(_root, key.data(), value);
 }
 
-JsonObject JsonObject::operator[](std::string_view key) {
-    cJSON *mval = cJSON_GetObjectItem(_root, key.data());
-    if (mval == nullptr) {
-        return JsonObject(_root, key);
+
+
+
+JsonObject::Proxy::operator std::string() const {
+    if (!cJSON_IsString(_root)) {
+        return {};
     }
-    return JsonObject(mval, key);
+    return std::string(_root->valuestring);
 }
 
-JsonObject JsonObject::operator[](int index) {
-    if (!isArray()) {
-        return JsonObject();
+JsonObject::Proxy::operator char *() const {
+    if (!cJSON_IsString(_root)) {
+        return {};
     }
-    return JsonObject(cJSON_GetArrayItem(_root, index));
+    return _root->valuestring;
+}
+
+JsonObject::Proxy::operator uint8_t() const {
+    if (!cJSON_IsNumber(_root)) {
+        return {};
+    }
+    return (uint8_t )_root->valuedouble;
+}
+
+JsonObject::Proxy::operator uint32_t() const {
+    if (!cJSON_IsNumber(_root)) {
+        return {};
+    }
+    return (uint32_t )_root->valuedouble;
+}
+
+JsonObject::Proxy::operator int() const {
+    if (!cJSON_IsNumber(_root)) {
+        return {};
+    }
+    return (int )_root->valuedouble;
+}
+
+JsonObject::Proxy::operator float() const {
+    if (!cJSON_IsNumber(_root)) {
+        return {};
+    }
+    return (float )_root->valuedouble;
+}
+
+JsonObject::Proxy::operator bool() const {
+    if (!cJSON_IsBool(_root)) {
+        return {};
+    }
+    return (bool )_root->valuedouble;
+}
+
+JsonObject::Proxy JsonObject::Proxy::operator[](std::string_view key) {
+    cJSON *mval = cJSON_GetObjectItem(_root, key.data());
+    if (mval == nullptr) {
+        return Proxy(_root, key);
+    }
+    return Proxy(mval, key);
+}
+
+JsonObject::Proxy JsonObject::Proxy::operator[](int index) {
+    if (!isArray()) {
+        return Proxy(nullptr);
+    }
+    return Proxy(cJSON_GetArrayItem(_root, index));
+}
+
+
+JsonObject::Proxy JsonObject::operator[](std::string_view key) {
+    cJSON *mval = cJSON_GetObjectItem(_root, key.data());
+    if (mval == nullptr) {
+        return Proxy(_root, key);
+    }
+    return Proxy(mval, key);
+}
+
+JsonObject::Proxy JsonObject::operator[](int index) {
+    if (!isArray()) {
+        return Proxy(nullptr);
+    }
+    return Proxy(cJSON_GetArrayItem(_root, index));
 }
 
 JsonObject& JsonObject::operator=(JsonObject&& other) noexcept {
