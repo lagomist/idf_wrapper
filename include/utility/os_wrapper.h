@@ -121,10 +121,10 @@ private:
 
 class LockGuard {
 public:
-	LockGuard(Mutex& mutex):_mutex(mutex) {mutex.lock();}
+	LockGuard(MutexBase& mutex):_mutex(mutex) {mutex.lock();}
 	~LockGuard() {_mutex.unlock();}
 private:
-	Mutex& _mutex;
+	MutexBase& _mutex;
 };
 
 class Semaphore {

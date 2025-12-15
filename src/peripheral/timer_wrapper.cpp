@@ -32,7 +32,9 @@ Timer::Timer(Callback cb, uint32_t period_ms, bool reload): _callback(cb) {
 }
 
 Timer::~Timer() {
+    gptimer_stop(_handle);
 	gptimer_disable(_handle);
+    gptimer_del_timer(_handle);
 }
 
 void Timer::start() {
