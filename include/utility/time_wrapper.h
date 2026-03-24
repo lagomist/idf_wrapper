@@ -1,6 +1,6 @@
 #pragma once
 
-#include <string_view>
+#include <string>
 
 namespace Wrapper {
 
@@ -10,7 +10,8 @@ uint64_t microsecond();
 uint64_t millisecond();
 uint32_t second();
 
-std::string_view date();
+std::string date();
+std::string get_current_time();
 
 // 手动授时，返回-1说明s这个时间戳错误
 int serve(uint32_t s, bool force = false);

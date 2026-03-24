@@ -1,7 +1,7 @@
 #include "time_wrapper.h"
 #include <esp_sntp.h>
 #include <esp_log.h>
-#include <time.h>
+#include <ctime>
 #include <atomic>
 
 namespace Wrapper {
@@ -26,10 +26,25 @@ uint32_t second() {
 	return tv.tv_sec;
 }
 
-std::string_view date() {
-	time_t timep;
+std::string date() {
+    char buffer[32] = {0};
+    time_t timep;
     time(&timep);
-	return ctime(&timep);
+    std::strftime(buffer, sizeof(buffer), "%Y-%m-%d", localtime(&timep));
+    return std::string(buffer);
+}
+
+std::string get_current_time() {
+    timeval tv;
+    char buffer[9] = {0};
+    gettimeofday(&tv, nullptr);
+    
+    struct tm tm_time;
+    localtime_r(&tv.tv_sec, &tm_time);
+    std::snprintf(buffer, sizeof(buffer), "%02d:%02d:%02d", 
+             tm_time.tm_hour, tm_time.tm_min, tm_time.tm_sec);
+    
+    return std::string(buffer);
 }
 
 
