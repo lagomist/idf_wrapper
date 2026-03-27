@@ -1,5 +1,6 @@
 #include "spi_wrapper.h"
 #include "driver/spi_master.h"
+#include <cstring>
 
 #define _hd ((spi_device_handle_t)_device)
 #define _phd ((spi_device_handle_t *)&_device)
@@ -81,16 +82,29 @@ int Device::read(uint8_t addr, uint8_t& data_out) {
 }
 
 int Device::read(uint8_t addr, uint8_t data_out[], uint8_t len) {
-	spi_transaction_t t = {
-		.addr		= addr,
-		.length		= size_t(len) * 8,
-		.rxlength	= size_t(len) * 8,
-		.tx_buffer = "\x00\x00\x00\x00",
-		.rx_buffer	= data_out
-	};
+	spi_transaction_t t;
+    std::memset(&t, 0, sizeof(t));
+	t.addr = addr;
+    t.length = size_t(len) * 8;
+	t.rxlength = size_t(len) * 8;
+    t.tx_buffer = "\x00\x00\x00\x00";
+	t.rx_buffer = data_out;
+
 	if(spi_device_polling_transmit(_hd, &t) != ESP_OK)
 		return -1;
 	return len;
+}
+
+int Device::trans(const uint8_t tx_buf[], size_t tx_len, uint8_t rx_buf[], size_t rx_len) {
+	spi_transaction_t t;
+    std::memset(&t, 0, sizeof(t));
+    t.length = tx_len * 8;
+    t.tx_buffer = tx_buf;
+	t.rxlength = rx_len * 8;
+	t.rx_buffer = rx_buf;
+	if(spi_device_polling_transmit(_hd, &t) != ESP_OK)
+		return -1;
+	return tx_len;
 }
 
 

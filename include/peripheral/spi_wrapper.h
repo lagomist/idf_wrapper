@@ -1,6 +1,7 @@
 #pragma once
 
-#include <stdint.h>
+#include <cstdint>
+#include <cstddef>
 
 namespace Wrapper {
 
@@ -19,6 +20,7 @@ public:
 	int write(uint8_t addr, const uint8_t data[], uint8_t len);
 	int read(uint8_t addr, uint8_t& data_out);
 	int read(uint8_t addr, uint8_t data[], uint8_t len);
+	int trans(const uint8_t tx_buf[], size_t tx_len, uint8_t rx_buf[], size_t rx_len);
 protected:
 	uint8_t _host;
 	void* _device = nullptr;
