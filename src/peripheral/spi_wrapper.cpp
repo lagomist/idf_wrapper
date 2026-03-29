@@ -9,7 +9,7 @@ namespace Wrapper {
 
 namespace SPI {
 
-void init(uint8_t host, uint8_t mosi, uint8_t miso, uint8_t clk, bool enable_dma) {
+void init(uint8_t host, int mosi, int miso, int clk, bool enable_dma, int max_trans_sz) {
 	spi_bus_config_t buscfg = {
 		.mosi_io_num = mosi,
 		.miso_io_num = miso,
@@ -18,7 +18,7 @@ void init(uint8_t host, uint8_t mosi, uint8_t miso, uint8_t clk, bool enable_dma
 		.quadhd_io_num = -1,
 		// if 0, default, 4096, but it won't allocate 4096 bytes from heap in the beginning.
 		// I've tested. the heap useage only inrease 20bytes from setting to 128 to 4096.
-		// .max_transfer_sz = 0,
+		.max_transfer_sz = max_trans_sz,
 	};
 	// Initialize the SPI bus
 	ESP_ERROR_CHECK(spi_bus_initialize((spi_host_device_t)host, &buscfg, enable_dma ? SPI_DMA_CH_AUTO : SPI_DMA_DISABLED));
@@ -29,9 +29,9 @@ void deinit(uint8_t host) {
 }
 
 
-int Device::init(uint32_t freq_mhz, int cs_io_num, uint8_t mode) {
+int Device::init(uint32_t freq_mhz, int cs_io_num, uint8_t mode, uint8_t addr_bit) {
 	spi_device_interface_config_t devcfg = {
-		.address_bits	= 8,
+		.address_bits	= addr_bit,
 		.mode			= mode,
 		.clock_speed_hz	= int(freq_mhz * 1000000),
 		.spics_io_num	= cs_io_num,
