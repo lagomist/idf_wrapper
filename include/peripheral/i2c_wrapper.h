@@ -7,7 +7,9 @@ namespace Wrapper {
 
 namespace I2C {
 
-void init(uint8_t host, uint8_t sda, uint8_t scl, bool inter_pullup = true);
+void init(uint8_t host, int sda, int scl, bool inter_pullup = true);
+bool isInited(uint8_t host);
+void *getBusHandle(uint8_t host);
 void deinit(uint8_t host);
 
 

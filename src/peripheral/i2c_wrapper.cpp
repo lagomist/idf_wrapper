@@ -11,7 +11,7 @@ namespace I2C {
 
 static i2c_master_bus_handle_t _handle[5];
 
-void init(uint8_t host, uint8_t sda, uint8_t scl, bool inter_pullup) {
+void init(uint8_t host, int sda, int scl, bool inter_pullup) {
 	if (host >= 4) return;
 	i2c_master_bus_config_t buscfg = {
 		.i2c_port = (i2c_port_num_t )host,
@@ -24,6 +24,16 @@ void init(uint8_t host, uint8_t sda, uint8_t scl, bool inter_pullup) {
 		.flags = {.enable_internal_pullup = inter_pullup,},
 	};
 	ESP_ERROR_CHECK(i2c_new_master_bus(&buscfg, &_handle[host]));
+}
+
+bool isInited(uint8_t host) {
+	if (host >= 4) return false;
+	return _handle[host] != NULL;
+}
+
+void *getBusHandle(uint8_t host) {
+	if (host >= 4) return nullptr;
+	return _handle[host];
 }
 
 void deinit(uint8_t host) {
