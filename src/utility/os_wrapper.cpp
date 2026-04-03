@@ -131,6 +131,10 @@ void Task::create(const Cfg& cfg) {
 	create(cfg.func, cfg.arg, cfg.name, cfg.stack_size, cfg.priority, cfg.core_id);
 }
 
+void Task::selfDelete() {
+	vTaskDelete(nullptr);
+}
+
 void Task::del() {
 	ESP_LOGI(TAG, "task %s deleted", get_name().data());
 	assert(_hd);

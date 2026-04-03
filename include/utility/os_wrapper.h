@@ -69,6 +69,8 @@ public:
 		eSetValueWithoutOverwrite,
 	};
 
+	static void selfDelete();
+
 	void create(TaskFunc func, void* arg, const char name[], uint32_t stack_size, uint32_t priority, int core_id = -1);
 	void create(const Cfg& cfg);
 	void del();
