@@ -97,6 +97,20 @@ int read(std::string_view name, std::vector<T>& value) {
     return len;
 }
 
+int read_at(std::string_view name, uint8_t* buf, size_t offset, size_t len) {
+    FILE* fp = fopen(name.data(), "rb");
+    if (fp == nullptr) {
+        return -1;
+    }
+    if (fseek(fp, offset, SEEK_SET) != 0) {
+        fclose(fp);
+        return -1;
+    }
+    size_t read_len = fread(buf, 1, len, fp);
+    fclose(fp);
+    return read_len;
+}
+
 
 int get_file_size(std::string_view name) {
     FILE* fp = fopen(name.data(), "rb");
@@ -118,7 +132,7 @@ constexpr static char BASE_PATH[] = "/flash";
 // Handle of the wear levelling library instance
 static wl_handle_t s_wl_handle = WL_INVALID_HANDLE;
 
-std::string_view get_base_path() {
+std::string get_base_path() {
 	return BASE_PATH;
 }
 
@@ -163,7 +177,11 @@ namespace SdCard {
 static sdmmc_card_t *_card = nullptr;
 constexpr static const char MOUNT_POINT[] = "/sdcard";
 
-std::string_view get_base_path() {
+bool is_mounted() {
+    return _card != nullptr;
+}
+
+std::string get_base_path() {
     return MOUNT_POINT;
 }
 

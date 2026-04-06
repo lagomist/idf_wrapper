@@ -27,9 +27,11 @@ int write(std::string_view name, std::vector<T> value);
 template<typename T>
 int read(std::string_view name, std::vector<T>& value);
 
+int read_at(std::string_view name, uint8_t* buf, size_t offset, size_t len);
+
 namespace Flash {
 
-std::string_view get_base_path();
+std::string get_base_path();
 int mount();
 int unmount();
 int format();
@@ -38,7 +40,9 @@ int format();
 
 namespace SdCard { 
 
-std::string_view get_base_path();
+bool is_mounted();
+
+std::string get_base_path();
 // SPI
 int mount(uint8_t spi_port, int spi_cs);
 
