@@ -14,6 +14,7 @@ void* ADCContinuous::_adc_handle[2] = {nullptr, nullptr};
 
 ADC::ADC(uint8_t channel, uint8_t unit, Atten atten)
 : _unit(unit), _channel(channel), _atten(atten) {
+#if ADC_CALI_SCHEME_CURVE_FITTING_SUPPORTED
 	adc_cali_curve_fitting_config_t cali_config = {
 		.unit_id = (adc_unit_t  )_unit,
 		.chan = (adc_channel_t )_channel,
@@ -21,6 +22,15 @@ ADC::ADC(uint8_t channel, uint8_t unit, Atten atten)
 		.bitwidth = ADC_BITWIDTH_12,
 	};
 	ESP_ERROR_CHECK(adc_cali_create_scheme_curve_fitting(&cali_config, (adc_cali_handle_t*)&_cali_handle));
+#elif ADC_CALI_SCHEME_LINE_FITTING_SUPPORTED
+	adc_cali_line_fitting_config_t cali_config = {
+		.unit_id = (adc_unit_t  )_unit,
+		.atten = (adc_atten_t ) _atten,
+		.bitwidth = ADC_BITWIDTH_12,
+		.default_vref = 1100,
+	};
+	ESP_ERROR_CHECK(adc_cali_create_scheme_line_fitting(&cali_config, (adc_cali_handle_t*)&_cali_handle));
+#endif
 }
 
 int ADC::rawToVoltage(int raw) {
