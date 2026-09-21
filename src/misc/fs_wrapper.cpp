@@ -2,7 +2,10 @@
 #include "esp_vfs.h"
 #include "esp_vfs_fat.h"
 #include "sdmmc_cmd.h"
+#include "soc/soc_caps.h"
+#if SOC_SDMMC_HOST_SUPPORTED
 #include "driver/sdmmc_host.h"
+#endif
 #include <esp_log.h>
 #include <string>
 #include <array>
@@ -216,6 +219,7 @@ int mount(uint8_t spi_port, int spi_cs) {
 
 
 int mount(int clk, int cmd, int d0) {
+#if SOC_SDMMC_HOST_SUPPORTED
     esp_vfs_fat_sdmmc_mount_config_t mount_config = {};
     mount_config.format_if_mount_failed = true;     // If the hook fails, create a partition table and format the SD car
     mount_config.max_files = 5;                      // Maximum number of open files
@@ -237,9 +241,13 @@ int mount(int clk, int cmd, int d0) {
         return ret;
     }
 
-    sdmmc_card_print_info(stdout, _card); 
+    sdmmc_card_print_info(stdout, _card);
     ESP_LOGI(TAG,"practical size:%.2fG",(float)(_card->csd.capacity)/2048/1024);
     return 0;
+#else
+    ESP_LOGE(TAG, "SDMMC host not supported");
+    return -1;
+#endif
 }
 
 int unmount() {

@@ -27,7 +27,9 @@ ADC::ADC(uint8_t channel, uint8_t unit, Atten atten)
 		.unit_id = (adc_unit_t  )_unit,
 		.atten = (adc_atten_t ) _atten,
 		.bitwidth = ADC_BITWIDTH_12,
+#if CONFIG_IDF_TARGET_ESP32
 		.default_vref = 1100,
+#endif
 	};
 	ESP_ERROR_CHECK(adc_cali_create_scheme_line_fitting(&cali_config, (adc_cali_handle_t*)&_cali_handle));
 #endif

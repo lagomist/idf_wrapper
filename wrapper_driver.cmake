@@ -8,6 +8,7 @@ list (APPEND dependencies
     esp_driver_i2c
     esp_driver_spi
     esp_driver_ledc
+    esp_driver_sdmmc
     esp_adc
     app_update
     esp_app_format
