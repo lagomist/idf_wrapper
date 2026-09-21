@@ -150,6 +150,7 @@ bool JsonBase::getBool(std::string_view key) const {
 
 void JsonBase::addToArray(JsonBase& item) {
     cJSON_AddItemToArray(_root, item._root);
+    item._is_child = true;
 }
 
 void JsonBase::addToArray(std::string_view value) {
@@ -164,6 +165,7 @@ void JsonBase::addToArray(int value) {
 
 void JsonBase::add(std::string_view key, JsonBase& obj) {
     cJSON_AddItemToObject(_root, key.data(), obj._root);
+    obj._is_child = true;
 }
 
 void JsonBase::add(std::string_view key, std::string_view value) {
