@@ -380,8 +380,7 @@ State provision(std::string_view ssid, std::string_view pswd, uint32_t timeout_m
 }
 
 void init(std::string_view ssid, std::string_view pswd) {
-	if (_sta_netif || _ap_netif)
-		return;
+	if (_sta_netif || _ap_netif) return;
     _ap_netif = esp_netif_create_default_wifi_ap();
     _sta_netif = esp_netif_create_default_wifi_sta();
 	wifi_init_config_t init_cfg = WIFI_INIT_CONFIG_DEFAULT();
@@ -389,7 +388,7 @@ void init(std::string_view ssid, std::string_view pswd) {
     ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, event_handler, NULL));
     ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, event_handler, NULL));
 	ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
-	ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
+	ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
     _wifi_mode = WIFI_MODE_APSTA;
     wifi_ap_config(ssid, pswd);
     esp_wifi_start();
